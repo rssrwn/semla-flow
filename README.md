@@ -39,7 +39,7 @@ We provide 4 scripts in the repository:
 
 Each script can be run as follows (where `<script>` is replaced by the script name above without `.py`): `python -m semlaflow.<script> --data_path <path/to/data> <other_args>`
 
-See the bottom of each script for a full list of the arguments available. Default paramaters for those arguments are also given as global declarations at the top of each file.
+See the bottom of each script for a full list of the arguments available. Default paramaters for those arguments are also given as global declarations at the top of each file. The default arguments in the training script are for GEOM Drugs. To train on QM9 we use a `bond_loss_weight` of 0.5, 2000 `warm_up_steps` and usually 300 `epochs`. 
 
 ### Tests
 
