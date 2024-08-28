@@ -17,6 +17,11 @@ For developing (and to run the notebooks) you will also need to install the extr
 
 ## Datasets
 
+For ease-of-use we have provided the processed data files in a Google drive [here](https://drive.google.com/drive/folders/1rHi5JzN05bsGRGQUcWRmDu-Ilfoa9EAT?usp=sharing). Copy the folder called `smol` from the QM9 or GEOM drugs folders and point to the `smol` folder when running the scripts. For example, pass `--data_path path/to/data/qm9/smol` to the script you wish to run.
+
+
+### Data Prep
+
 We copied the code from MiDi (https://github.com/cvignac/MiDi) to download the QM9 dataset and create the data splits. We provide the code to do this, as well as create the _Smol_ internal dataset representation used for training in the `notebooks/qm9.ipynb` notebook.
 
 For GEOM Drugs we also follow the URLs provided in the MiDi repo. GEOM Drugs is preprocessed using the `preprocess.py` script. GEOM Drugs URLs from MiDi are as follows:
@@ -39,7 +44,11 @@ We provide 4 scripts in the repository:
 
 Each script can be run as follows (where `<script>` is replaced by the script name above without `.py`): `python -m semlaflow.<script> --data_path <path/to/data> <other_args>`
 
-See the bottom of each script for a full list of the arguments available. Default paramaters for those arguments are also given as global declarations at the top of each file. The default arguments in the training script are for GEOM Drugs. To train on QM9 we use a `bond_loss_weight` of 0.5, 2000 `warm_up_steps` and usually 300 `epochs`. 
+See the bottom of each script for a full list of the arguments available. Default paramaters for those arguments are also given as global declarations at the top of each file. The default arguments in the training script are for GEOM Drugs. To train on QM9 we use a `bond_loss_weight` of 0.5, 2000 `warm_up_steps` and usually 300 `epochs`.
+
+### Models
+
+We also provide pretrained model checkpoints for our headline QM9 and GEOM drugs models [here](https://drive.google.com/drive/folders/1rHi5JzN05bsGRGQUcWRmDu-Ilfoa9EAT?usp=sharing). If you wish to evaluate one of these models pass the checkpoint to the evaluate script. For example `--ckpt_path path/to/models/qm9.ckpt`
 
 ### Tests
 
@@ -53,3 +62,15 @@ Specific test modules can also be run individually. Eg. `python -m unittest -v t
 ## Contact
 
 If you find a problem with the code feel free to make a PR. If you have questions or other issues with the code you can email me directly -> rossir [at] chalmers [dot] se
+
+
+## Citation
+
+```
+@article{irwin2024efficient,
+  title={Efficient 3D Molecular Generation with Flow Matching and Scale Optimal Transport},
+  author={Irwin, Ross and Tibo, Alessandro and Janet, Jon-Paul and Olsson, Simon},
+  journal={arXiv preprint arXiv:2406.07266},
+  year={2024}
+}
+```
