@@ -62,7 +62,7 @@ class Integrator:
         n_bonds = predicted["bonds"].size(-1)
 
         # *** Coord update step *** 
-        coord_velocity = predicted["coords"] - prior["coords"]
+        coord_velocity = (predicted["coords"] - curr["coords"]) / (1 - t.view(-1, 1, 1))
         coord_velocity += (torch.randn_like(coord_velocity) * self.coord_noise_std)
         coords = curr["coords"] + (step_size * coord_velocity)
 
