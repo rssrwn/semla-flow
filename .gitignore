@@ -1,0 +1,24 @@
+# Basic Gitignore file
+
+# Editors
+.vscode/
+
+# Jupyter notebook checkpoints
+notebooks/.ipynb_checkpoints/
+
+# Python cache files
+__pycache__/
+*/__pycache__/
+**/__pycache__/
+*.pyc
+
+# Log files
+molproc_logs/
+lightning_logs/
+notebooks/lightning_logs/
+wandb/
+nohup.out
+
+# Slurm submission scripts and logs
+subslurm/
+slurm-*

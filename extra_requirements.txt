@@ -1,0 +1,4 @@
+matplotlib
+jupyter
+ipykernel
+py3Dmol
