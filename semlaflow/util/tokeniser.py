@@ -3,10 +3,9 @@ from __future__ import annotations
 import pickle
 import threading
 from abc import ABC, abstractmethod
-from typing import Union, Optional
+from typing import Optional, Union
 
 import semlaflow.util.functional as smolF
-
 
 indicesT = Union[list[int], list[list[int]]]
 
@@ -19,7 +18,7 @@ PICKLE_PROTOCOL = 4
 def _check_unique(obj_list, name="objects"):
     if len(obj_list) != len(set(obj_list)):
         raise RuntimeError(f"{name} cannot contain duplicates")
-    
+
 
 def _check_type_all(obj_list, exp_type, name="list"):
     for obj in obj_list:

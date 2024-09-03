@@ -1,12 +1,12 @@
 import os
 from functools import partial
 
-import torch
 import lightning as L
+import torch
 from torch.utils.data import DataLoader
 
-import semlaflow.util.rdkit as smolRD
 import semlaflow.util.functional as smolF
+import semlaflow.util.rdkit as smolRD
 from semlaflow.data.util import BucketBatchSampler
 from semlaflow.util.molrepr import GeometricMol, GeometricMolBatch
 
@@ -186,7 +186,7 @@ class GeometricDM(SmolDM):
 
     def _batch_to_dict(self, smol_batch):
         # Pad batch to n_atoms using a fake mol
-        # If we are not padding to bucket size get_padded_size will just return largest mol size 
+        # If we are not padding to bucket size get_padded_size will just return largest mol size
         n_atoms = self._get_padded_size(smol_batch)
         batch = [self._fake_mol_like(smol_batch[0], n_atoms)] + smol_batch.to_list()
         batch = GeometricMolBatch.from_list(batch)

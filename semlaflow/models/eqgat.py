@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 import semlaflow.util.functional as smolF
-from semlaflow.models.semla import MolecularGenerator, CoordNorm
+from semlaflow.models.semla import CoordNorm, MolecularGenerator
 
 
 def adj_to_attn_mask(adj_matrix, pos_inf=False):
@@ -44,7 +44,7 @@ class GatedEquiUpdate(torch.nn.Module):
                 Atom feats [batch_size, n_atoms, d_model]
                 Equi feats [batch_size, n_atoms, n_equi_feats, 3]
         """
-        
+
         equi_feats_proj = self.equi_proj(equi_feats.transpose(2, 3)).transpose(2, 3)
         equi_feats_out = equi_feats_proj[:, :, :self.n_equi_feats, :]
         norms = torch.linalg.vector_norm(equi_feats_proj[:, :, self.n_equi_feats:, :], dim=-1) + self.eps
@@ -95,7 +95,7 @@ class EqgatLayer(torch.nn.Module):
             coords (torch.Tensor): Input coordinates, shape [batch_size, n_atoms, 3]
             inv_feats (torch.Tensor): Invariant atom features, shape [batch_size, n_atoms, d_model]
             equi_feats (torch.Tensor): Equivariant atom features, shape [batch_size, n_atoms, n_equi_feats, 3]
-            adj_matrix (torch.Tensor): Adjacency matrix, shape [batch_size, n_atoms, n_atoms], 1 for connected 
+            adj_matrix (torch.Tensor): Adjacency matrix, shape [batch_size, n_atoms, n_atoms], 1 for connected
             atom_mask (torch.Tensor): Mask for fake atoms, shape [batch_size, n_atoms], 1 for real atoms
             edge_feats (torch.Tensor): In edge features, shape [batch_size, n_nodes, n_nodes, d_edge]
 
@@ -131,7 +131,7 @@ class EqgatLayer(torch.nn.Module):
         b = pairwise_mlp_out[:, :, :, self.d_model:c_start]
         c = pairwise_mlp_out[:, :, :, c_start:d_start]
         d = pairwise_mlp_out[:, :, :, d_start:d_end]
-        s = pairwise_mlp_out[:, :, :, d_end:d_end+1]
+        s = pairwise_mlp_out[:, :, :, d_end:d_end + 1]
 
         # Compute attention weights
         attn_mask = adj_to_attn_mask(adj_matrix)
@@ -218,7 +218,7 @@ class EqgatPredictionHead(torch.nn.Module):
             coords (torch.Tensor): Input coordinates, shape [batch_size, n_atoms, 3]
             inv_feats (torch.Tensor): Invariant atom features, shape [batch_size, n_atoms, d_model]
             equi_feats (torch.Tensor): Equivariant atom features, shape [batch_size, n_atoms, n_equi_feats, 3]
-            adj_matrix (torch.Tensor): Adjacency matrix, shape [batch_size, n_atoms, n_atoms], 1 for connected 
+            adj_matrix (torch.Tensor): Adjacency matrix, shape [batch_size, n_atoms, n_atoms], 1 for connected
             atom_mask (torch.Tensor): Mask for fake atoms, shape [batch_size, n_atoms], 1 for real atoms
             edge_feats (torch.Tensor): In edge features, shape [batch_size, n_nodes, n_nodes, d_edge]
 
@@ -269,7 +269,7 @@ class EqgatDynamics(torch.nn.Module):
             coords (torch.Tensor): Input coordinates, shape [batch_size, n_atoms, 3]
             inv_feats (torch.Tensor): Invariant atom features, shape [batch_size, n_atoms, d_model]
             equi_feats (torch.Tensor): Equivariant atom features, shape [batch_size, n_atoms, n_equi_feats, 3]
-            adj_matrix (torch.Tensor): Adjacency matrix, shape [batch_size, n_atoms, n_atoms], 1 for connected 
+            adj_matrix (torch.Tensor): Adjacency matrix, shape [batch_size, n_atoms, n_atoms], 1 for connected
             atom_mask (torch.Tensor): Mask for fake atoms, shape [batch_size, n_atoms], 1 for real atoms
             edge_feats (torch.Tensor): In edge features, shape [batch_size, n_nodes, n_nodes, d_edge]
 
@@ -355,7 +355,7 @@ class EqgatGenerator(MolecularGenerator):
 
         Args:
             coords (torch.Tensor): Input coordinates, shape [batch_size, n_atoms, 3]
-            inv_feats (torch.Tensor): Invariant atom features, shape [batch_size, n_atoms, n_feats] 
+            inv_feats (torch.Tensor): Invariant atom features, shape [batch_size, n_atoms, n_feats]
             edge_feats (torch.Tensor): In edge features, shape [batch_size, n_atoms, n_atoms, n_edge_types]
             atom_mask (torch.Tensor): Mask for fake atoms, shape [batch_size, n_atoms], 1 for real atoms
 

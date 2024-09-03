@@ -3,7 +3,6 @@ from typing import Union
 import torch
 from scipy.spatial.transform import Rotation
 
-
 _T = torch.Tensor
 TupleRot = tuple[float, float, float]
 
@@ -30,7 +29,7 @@ def pad_tensors(tensors: list[_T], pad_dim: int = 0) -> _T:
     if pad_dim != 0:
         # TODO
         raise NotImplementedError()
-    
+
     padded = torch.nn.utils.rnn.pad_sequence(tensors, batch_first=True)
     return padded
 
@@ -162,7 +161,7 @@ def _pad_edges(edges, max_edges, value=0):
     }
 
     if num_edges > max_edges:
-        raise ValueError(f"Number of edges in edge tensor to be padded cannot be greater than max_edges.")
+        raise ValueError("Number of edges in edge tensor to be padded cannot be greater than max_edges.")
 
     add_edges = max_edges - num_edges
 
@@ -198,7 +197,7 @@ def edges_from_adj(adj_matrix):
 
     # Pad each batch element by a seperate amount so that they can all be packed into a tensor
     # It might be possible to do this in batch form without iterating, but for now this will do
-    num_edges = adj_ones.sum(dim=(1,2)).tolist()
+    num_edges = adj_ones.sum(dim=(1, 2)).tolist()
     edge_tuples = list(adj_matrix.nonzero()[:, 1:].split(num_edges))
     padded = [_pad_edges(edges, max(num_edges), value=0) for edges in edge_tuples]
 
@@ -220,7 +219,7 @@ def bonds_from_adj(adj_matrix, lower_tri=True):
         lower_tri (bool): Whether to only consider bonds which sit in the lower triangular of adj_matrix.
 
     Returns:
-        An bond list tensor, shape [batch_size, num_bonds, 3]. If an item is a padding bond index 2 on the last 
+        An bond list tensor, shape [batch_size, num_bonds, 3]. If an item is a padding bond index 2 on the last
             dimension will be 0.
     """
 
@@ -260,7 +259,7 @@ def adj_from_edges(edge_indices: _T, edge_types: _T, n_nodes: int, symmetric: bo
                 otherwise only the exact node indices within edges will be used to create the adjacency.
 
     Returns:
-        torch.Tensor: Adjacency matrix tensor, shape [n_nodes, n_nodes] or 
+        torch.Tensor: Adjacency matrix tensor, shape [n_nodes, n_nodes] or
                 [n_nodes, n_nodes, edge_types] if distributions over edge types are provided.
     """
 
@@ -603,8 +602,8 @@ class SparseFeatures:
             return self.from_dense(self._dense * other, self._idxs)
 
         if not torch.is_tensor(other):
-            raise TypeError(f"Object to multiply by must be an int, float or torch.Tensor")
-        
+            raise TypeError("Object to multiply by must be an int, float or torch.Tensor")
+
         assert other.size() == (self.bs, self.num_nodes, self.num_nodes)
 
         other_dense = torch.gather(other, 2, self._idxs)
@@ -612,11 +611,11 @@ class SparseFeatures:
 
     def matmul(self, other):
         if not torch.is_tensor(other):
-            raise TypeError(f"Object to multiply by must be a torch.Tensor")
+            raise TypeError("Object to multiply by must be a torch.Tensor")
 
         assert tuple(other.size()[:2]) == (self.bs, self.num_nodes)
 
-        # There doesn't seem to be an efficient implementation of sparse batched matmul available atm, so just do 
+        # There doesn't seem to be an efficient implementation of sparse batched matmul available atm, so just do
         # regular matmul instead. We will still get some speed benefit from having lots of zeros.
         tensor = self.to_tensor()
         return torch.bmm(tensor, other)

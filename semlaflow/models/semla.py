@@ -1,7 +1,8 @@
 import copy
-import torch
-import numpy as np
 from abc import ABC, abstractmethod
+
+import numpy as np
+import torch
 
 import semlaflow.util.functional as smolF
 
@@ -161,7 +162,7 @@ class NodeAttention(torch.nn.Module):
         d_head = d_model // n_attn_heads
 
         if d_attn % n_attn_heads != 0:
-            raise ValueError(f"n_attn_heads must divide d_model (or d_attn if provided) exactly.")
+            raise ValueError("n_attn_heads must divide d_model (or d_attn if provided) exactly.")
 
         self.d_model = d_model
         self.d_attn = d_attn
@@ -635,7 +636,7 @@ class EquiInvDynamics(torch.nn.Module):
         Args:
             coords (torch.Tensor): Input coordinates, shape [batch_size, n_atoms, 3]
             inv_feats (torch.Tensor): Invariant atom features, shape [batch_size, n_atoms, d_model]
-            adj_matrix (torch.Tensor): Adjacency matrix, shape [batch_size, n_atoms, n_atoms], 1 for connected 
+            adj_matrix (torch.Tensor): Adjacency matrix, shape [batch_size, n_atoms, n_atoms], 1 for connected
             atom_mask (torch.Tensor, Optional): Mask for fake atoms, shape [batch_size, n_atoms], 1 for real atoms
             edge_feats (torch.Tensor, Optional): In edge features, shape [batch_size, n_nodes, n_nodes, d_edge]
             cond_coords (torch.Tensor, Optional): Conditional coords, shape [batch_size, n_nodes, 3]
@@ -813,7 +814,7 @@ class SemlaGenerator(MolecularGenerator):
 
         Args:
             coords (torch.Tensor): Input coordinates, shape [batch_size, n_atoms, 3]
-            inv_feats (torch.Tensor): Invariant atom features, shape [batch_size, n_atoms, n_feats] 
+            inv_feats (torch.Tensor): Invariant atom features, shape [batch_size, n_atoms, n_feats]
             edge_feats (torch.Tensor): In edge features, shape [batch_size, n_atoms, n_atoms, n_edge_types]
             cond_coords (torch.Tensor): Conditional coords, shape [batch_size, n_atoms, 3]
             cond_atomics (torch.Tensor): Conditional atom type logits, shape [batch_size, n_atoms, n_feats]

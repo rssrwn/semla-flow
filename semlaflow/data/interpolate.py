@@ -1,14 +1,13 @@
+from abc import ABC, abstractmethod
 from typing import Optional
 
-import torch
 import numpy as np
-from abc import ABC, abstractmethod
-from scipy.spatial.transform import Rotation
+import torch
 from scipy.optimize import linear_sum_assignment
+from scipy.spatial.transform import Rotation
 
 import semlaflow.util.functional as smolF
-from semlaflow.util.molrepr import SmolMol, SmolBatch, GeometricMol, GeometricMolBatch
-
+from semlaflow.util.molrepr import GeometricMol, GeometricMolBatch, SmolBatch, SmolMol
 
 SCALE_OT_FACTOR = 0.2
 
@@ -161,7 +160,7 @@ class GeometricInterpolant(Interpolant):
     ):
 
         if fixed_time is not None and (fixed_time < 0 or fixed_time > 1):
-            raise ValueError(f"fixed_time must be between 0 and 1 if provided.")
+            raise ValueError("fixed_time must be between 0 and 1 if provided.")
 
         if coord_interpolation != "linear":
             raise ValueError(f"coord interpolation '{coord_interpolation}' not supported.")
@@ -254,7 +253,7 @@ class GeometricInterpolant(Interpolant):
         """Permute the from_mol to best match the to_mol and return the permuted from_mol"""
 
         if to_mol.seq_length > from_mol.seq_length:
-            raise RuntimeError(f"from_mol must have at least as many atoms as to_mol.")
+            raise RuntimeError("from_mol must have at least as many atoms as to_mol.")
 
         # Find best permutation first, then best rotation
         # As done in Equivariant Flow Matching (https://arxiv.org/abs/2306.15030)
@@ -289,7 +288,7 @@ class GeometricInterpolant(Interpolant):
         """Interpolates mols which have already been sampled according to OT map, if required"""
 
         if from_mol.seq_length != to_mol.seq_length:
-            raise RuntimeError(f"Both molecules to be interpolated must have the same number of atoms.")
+            raise RuntimeError("Both molecules to be interpolated must have the same number of atoms.")
 
         # Interpolate coords and add gaussian noise
         coords_mean = (from_mol.coords * (1 - t)) + (to_mol.coords * t)

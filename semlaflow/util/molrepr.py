@@ -2,22 +2,21 @@ from __future__ import annotations
 
 import copy
 import pickle
-from pathlib import Path
 from abc import ABC, abstractmethod
-from typing_extensions import Self
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, Union, Generic, TypeVar, Tuple, Optional
+from pathlib import Path
+from typing import Callable, Generic, Optional, Tuple, TypeVar, Union
 
-import torch
 import numpy as np
+import torch
 from rdkit import Chem
 from scipy.spatial.transform import Rotation
+from typing_extensions import Self
 
-import semlaflow.util.rdkit as smolRD
 import semlaflow.util.functional as smolF
+import semlaflow.util.rdkit as smolRD
 from semlaflow.util.tokeniser import Vocabulary
-
 
 # Type aliases
 _T = torch.Tensor
@@ -87,7 +86,6 @@ class SmolMol(ABC):
     def __init__(self, str_id: str):
         self._str_id = str_id
 
-
     # *** Properties for molecule objects ***
 
     @property
@@ -104,7 +102,6 @@ class SmolMol(ABC):
     def seq_length(self) -> int:
         pass
 
-
     # *** Static constructor methods ***
 
     @staticmethod
@@ -117,7 +114,6 @@ class SmolMol(ABC):
     def from_rdkit(rdkit, mol: Chem.rdchem.Mol, *args) -> SmolMol:
         pass
 
-
     # *** Conversion functions for molecule objects ***
 
     @abstractmethod
@@ -128,13 +124,11 @@ class SmolMol(ABC):
     def to_rdkit(self, *args) -> Chem.rdchem.Mol:
         pass
 
-
     # *** Other functionality for molecule objects ***
 
     @abstractmethod
     def _copy_with(self, *args) -> Self:
         pass
-
 
     # *** Interface util functions for all molecule representations ***
 
@@ -167,7 +161,7 @@ class SmolBatch(Sequence, Generic[TSmolMol]):
     # All subclasses must call super init
     def __init__(self, mols: list[TSmolMol], device: Optional[TDevice] = None):
         if len(mols) == 0:
-            raise RuntimeError(f"Batch must be non-empty")
+            raise RuntimeError("Batch must be non-empty")
 
         if device is None:
             device = mols[0].device
@@ -176,7 +170,6 @@ class SmolBatch(Sequence, Generic[TSmolMol]):
 
         self._mols = mols
         self._device = torch.device(device)
-
 
     # *** Properties for molecular batches ***
 
@@ -197,7 +190,6 @@ class SmolBatch(Sequence, Generic[TSmolMol]):
     def mask(self) -> _T:
         pass
 
-
     # *** Sequence methods ***
 
     def __len__(self) -> int:
@@ -205,7 +197,6 @@ class SmolBatch(Sequence, Generic[TSmolMol]):
 
     def __getitem__(self, item: int) -> TSmolMol:
         return self._mols[item]
-
 
     # *** Default methods which may need overriden ***
 
@@ -234,7 +225,6 @@ class SmolBatch(Sequence, Generic[TSmolMol]):
     def collate(cls, batches: list[SmolBatch]) -> Self:
         all_mols = [mol for batch in batches for mol in batch]
         return cls.from_list(all_mols)
-
 
     # *** Abstract methods for batches ***
 
@@ -329,7 +319,6 @@ class GeometricMol(SmolMol):
 
         super().__init__(str_id)
 
-
     # *** General Properties ***
 
     @property
@@ -339,7 +328,6 @@ class GeometricMol(SmolMol):
     @property
     def seq_length(self) -> int:
         return self._coords.shape[0]
-
 
     # *** Geometric Specific Properties ***
 
@@ -388,7 +376,6 @@ class GeometricMol(SmolMol):
     def com(self):
         return self.coords.sum(dim=0) / self.seq_length
 
-
     # *** Interface Methods ***
 
     # TODO allow data to not have all dict keys
@@ -431,7 +418,7 @@ class GeometricMol(SmolMol):
     def from_rdkit(mol: Chem.rdchem.Mol) -> GeometricMol:
         # TODO handle this better - maybe create 3D info if not provided, with a warning
         if mol.GetNumConformers() == 0 or not mol.GetConformer().Is3D():
-            raise RuntimeError(f"The default conformer must have 3D coordinates")
+            raise RuntimeError("The default conformer must have 3D coordinates")
 
         conf = mol.GetConformer()
         smiles = smolRD.smiles_from_mol(mol)
@@ -444,7 +431,7 @@ class GeometricMol(SmolMol):
         for bond in mol.GetBonds():
             bond_start = bond.GetBeginAtomIdx()
             bond_end = bond.GetEndAtomIdx()
-    
+
             # TODO perhaps print a warning but just don't add the bond?
             bond_type = smolRD.BOND_IDX_MAP.get(bond.GetBondType())
             if bond_type is None:
@@ -524,7 +511,7 @@ class GeometricMol(SmolMol):
         """Used for permuting atom order. Can also be used for taking a subset of atoms but not duplicating."""
 
         if len(set(indices)) != len(indices):
-            raise ValueError(f"Indices list cannot contain duplicates.")
+            raise ValueError("Indices list cannot contain duplicates.")
 
         if max(indices) >= self.seq_length:
             raise ValueError(f"Index {max(indices)} is out of bounds for molecule with {self.seq_length} atoms.")
@@ -562,7 +549,6 @@ class GeometricMol(SmolMol):
         )
         return mol_copy
 
-
     # *** Geometric Specific Methods ***
 
     def zero_com(self) -> GeometricMol:
@@ -599,7 +585,6 @@ class GeometricMolBatch(SmolBatch[GeometricMol]):
         self._bonds = None
         self._charges = None
 
-
     # *** General Properties ***
 
     @property
@@ -609,7 +594,6 @@ class GeometricMolBatch(SmolBatch[GeometricMol]):
             self._mask = smolF.pad_tensors(masks)
 
         return self._mask
-
 
     # *** Geometric Specific Properties ***
 
@@ -670,7 +654,6 @@ class GeometricMolBatch(SmolBatch[GeometricMol]):
     @property
     def com(self) -> _T:
         return smolF.calc_com(self.coords, node_mask=self.mask)
-
 
     # *** Interface Methods ***
 
@@ -782,7 +765,6 @@ class GeometricMolBatch(SmolBatch[GeometricMol]):
         else:
             [self._save_batch(batch, path) for batch, path in zip(batches, save_paths)]
 
-
     # *** Geometric Specific Methods ***
 
     def zero_com(self) -> GeometricMolBatch:
@@ -802,7 +784,6 @@ class GeometricMolBatch(SmolBatch[GeometricMol]):
         scaled = (self.coords * scale) * self.mask.unsqueeze(2)
         return self._from_coords(scaled)
 
-
     # *** Util Methods ***
 
     def _from_coords(self, coords: _T) -> GeometricMolBatch:
@@ -810,10 +791,10 @@ class GeometricMolBatch(SmolBatch[GeometricMol]):
         _check_shapes_equal(coords, self.coords, [0, 1, 2])
 
         if coords.size(0) != self.batch_size:
-            raise RuntimeError(f"coords batch size must be the same as self batch size")
+            raise RuntimeError("coords batch size must be the same as self batch size")
 
         if coords.size(1) != max(self.seq_length):
-            raise RuntimeError(f"coords num atoms must be the same as largest molecule")
+            raise RuntimeError("coords num atoms must be the same as largest molecule")
 
         coords = coords.float().to(self.device)
 
@@ -845,8 +826,7 @@ class GeometricMolBatch(SmolBatch[GeometricMol]):
         atomics_arr = np.load(batch_dir / "atomics.npy", mmap_mode=mmap_mode)
         atomics = torch.from_numpy(atomics_arr)
 
-        bonds = None
-
+        # bonds = None
         # bonds_path = batch_dir / "bonds.npy"
         # if edges_path.exists():
         #     bonds_arr = np.load(bonds_path, mmap_mode=mmap_mode)

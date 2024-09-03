@@ -57,7 +57,7 @@ class VanillaEgnnLayer(torch.nn.Module):
         Args:
             coords (torch.Tensor): Input coordinates, shape [batch_size, n_atoms, 3]
             inv_feats (torch.Tensor): Invariant atom features, shape [batch_size, n_atoms, d_model]
-            adj_matrix (torch.Tensor): Adjacency matrix, shape [batch_size, n_atoms, n_atoms], 1 for connected 
+            adj_matrix (torch.Tensor): Adjacency matrix, shape [batch_size, n_atoms, n_atoms], 1 for connected
             atom_mask (torch.Tensor, Optional): Mask for fake atoms, shape [batch_size, n_atoms], 1 for real atoms
             edge_feats (torch.Tensor, Optional): In edge features, shape [batch_size, n_nodes, n_nodes, d_edge]
 
@@ -128,7 +128,7 @@ class VanillaEgnnLayer(torch.nn.Module):
             coords (torch.Tensor): Input coordinates, shape [batch_size, n_atoms, 3]
             node_feats (torch.Tensor): Invariant atom features, shape [batch_size, n_atoms, d_model]
             edge_feats (torch.Tensor, Optional): In edge features, shape [batch_size, n_nodes, n_nodes, d_edge]
-            adj_matrix (torch.Tensor): Adjacency matrix, shape [batch_size, n_atoms, n_atoms], 1 for connected 
+            adj_matrix (torch.Tensor): Adjacency matrix, shape [batch_size, n_atoms, n_atoms], 1 for connected
             atom_mask (torch.Tensor, Optional): Mask for fake atoms, shape [batch_size, n_atoms], 1 for real atoms
 
         Returns:
@@ -182,7 +182,7 @@ class VanillaEgnnDynamics(torch.nn.Module):
         Args:
             coords (torch.Tensor): Input coordinates, shape [batch_size, n_atoms, 3]
             inv_feats (torch.Tensor): Invariant atom features, shape [batch_size, n_atoms, d_model]
-            adj_matrix (torch.Tensor): Adjacency matrix, shape [batch_size, n_atoms, n_atoms], 1 for connected 
+            adj_matrix (torch.Tensor): Adjacency matrix, shape [batch_size, n_atoms, n_atoms], 1 for connected
             atom_mask (torch.Tensor, Optional): Mask for fake atoms, shape [batch_size, n_atoms], 1 for real atoms
             edge_feats (torch.Tensor, Optional): In edge features, shape [batch_size, n_nodes, n_nodes, d_edge]
 
@@ -279,8 +279,8 @@ class VanillaEgnnGenerator(MolecularGenerator):
 
         Args:
             coords (torch.Tensor): Input coordinates, shape [batch_size, num_atoms, 3]
-            inv_feats (torch.Tensor): Invariant atom features, shape [batch_size, num_atoms, num_feats] 
-            atom_mask (torch.Tensor, Optional): Mask for real and dummy atoms, shape [batch_size, num_atoms], 
+            inv_feats (torch.Tensor): Invariant atom features, shape [batch_size, num_atoms, num_feats]
+            atom_mask (torch.Tensor, Optional): Mask for real and dummy atoms, shape [batch_size, num_atoms],
                     1 for real atom 0 otherwise
 
         Returns:

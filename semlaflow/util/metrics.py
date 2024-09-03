@@ -7,7 +7,6 @@ from torchmetrics import Metric
 
 import semlaflow.util.rdkit as smolRD
 
-
 ALLOWED_VALENCIES = {
     "H": {
         0: 1,
@@ -283,7 +282,7 @@ class AverageEnergy(GenerativeMetric):
 
     def compute(self) -> torch.Tensor:
         return self.energy / self.n_valid_energies
-    
+
 
 class AverageStrainEnergy(GenerativeMetric):
     """

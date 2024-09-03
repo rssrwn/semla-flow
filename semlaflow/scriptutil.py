@@ -4,19 +4,18 @@ import math
 import resource
 from pathlib import Path
 
-import torch
 import numpy as np
-from tqdm import tqdm
-from rdkit import RDLogger
+import torch
 from openbabel import pybel
+from rdkit import RDLogger
 from torchmetrics import MetricCollection
+from tqdm import tqdm
 
-import semlaflow.util.rdkit as smolRD
 import semlaflow.util.functional as smolF
 import semlaflow.util.metrics as Metrics
-from semlaflow.util.tokeniser import Vocabulary
+import semlaflow.util.rdkit as smolRD
 from semlaflow.data.datasets import GeometricDataset
-
+from semlaflow.util.tokeniser import Vocabulary
 
 # Declarations to be used in scripts
 QM9_COORDS_STD_DEV = 1.723299503326416
@@ -54,7 +53,7 @@ def configure_fs(limit=4096):
             resource.setrlimit(n_file_resource, (limit, hard_limit))
             print("Limit changed successfully!")
 
-        except:
+        except Exception:
             print("Limit change unsuccessful. Using torch file_system file sharing strategy instead.")
 
             import torch.multiprocessing
