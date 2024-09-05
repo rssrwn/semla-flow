@@ -18,7 +18,7 @@ DEFAULT_DATASET = "geom-drugs"
 DEFAULT_ARCH = "semla"
 
 DEFAULT_D_MODEL = 256  # 384
-DEFAULT_N_LAYERS = 4  # 12
+DEFAULT_N_LAYERS = 6  # 12
 DEFAULT_D_MESSAGE = 64  # 128
 DEFAULT_D_EDGE = 64  # 128
 DEFAULT_N_COORD_SETS = 32  # 64
@@ -27,7 +27,7 @@ DEFAULT_D_MESSAGE_HIDDEN = 64  # 128
 DEFAULT_COORD_NORM = "length"
 DEFAULT_SIZE_EMB = 32  # 64
 
-DEFAULT_MAX_ATOMS = 128  # 256
+DEFAULT_MAX_ATOMS = 256
 
 DEFAULT_EPOCHS = 200
 DEFAULT_LR = 0.0003
@@ -53,18 +53,13 @@ DEFAULT_TIME_BETA = 1.0
 DEFAULT_OPTIMAL_TRANSPORT = "equivariant"
 
 
-# bfloat16 training produced significantly worse models than full so use default 16-bit instead
-def get_precision(args):
-    return "32"
-
-
 def build_model(args, dm, vocab):
     # Get hyperparameeters from the datamodule, pass these into the model to be saved
     hparams = {
         "epochs": args.epochs,
         "gradient_clip_val": args.gradient_clip_val,
         "dataset": args.dataset,
-        "precision": get_precision(args),
+        "precision": "32",
         "architecture": args.arch,
         **dm.hparams
     }
@@ -323,8 +318,7 @@ def build_trainer(args):
     val_check_epochs = 1 if args.trial_run else args.val_epochs
 
     project_name = f"{util.PROJECT_PREFIX}-{args.dataset}"
-    precision = get_precision(args)
-    print(f"Using precision '{precision}'")
+    print("Using precision '32'")
 
     logger = WandbLogger(project=project_name, save_dir="wandb", log_model=True)
     lr_monitor = LearningRateMonitor(logging_interval="step")
@@ -347,7 +341,7 @@ def build_trainer(args):
         gradient_clip_val=args.gradient_clip_val,
         check_val_every_n_epoch=val_check_epochs,
         callbacks=[lr_monitor, checkpointing],
-        precision=precision
+        precision="32"
     )
     return trainer
 

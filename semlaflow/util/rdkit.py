@@ -88,7 +88,7 @@ CHARGE_IDX_MAP = {charge: idx for idx, charge in IDX_CHARGE_MAP.items()}
 def _check_shape_len(arr, allowed, name="object"):
     num_dims = len(arr.shape)
     allowed = [allowed] if isinstance(allowed, int) else allowed
-    if num_dims not in allowed: 
+    if num_dims not in allowed:
         raise RuntimeError(f"Number of dimensions of {name} must be in {str(allowed)}, got {num_dims}")
 
 
@@ -165,7 +165,7 @@ def calc_energy(mol: Chem.rdchem.Mol, per_atom: bool = False) -> float:
 def optimise_mol(mol: Chem.rdchem.Mol, max_iters: int = 1000) -> Chem.rdchem.Mol:
     """Optimise the conformation of an RDKit molecule
 
-    Only the first (0th index) conformer within the molecule is optimised. The molecule is copied so the original 
+    Only the first (0th index) conformer within the molecule is optimised. The molecule is copied so the original
     is not modified.
 
     Args:
@@ -179,14 +179,11 @@ def optimise_mol(mol: Chem.rdchem.Mol, max_iters: int = 1000) -> Chem.rdchem.Mol
 
     mol_copy = Chem.Mol(mol)
     try:
-        exitcode = AllChem.MMFFOptimizeMolecule(mol_copy, maxIters=max_iters)
+        AllChem.MMFFOptimizeMolecule(mol_copy, maxIters=max_iters)
     except Exception:
-        exitcode = -1
+        return None
 
-    if exitcode == 0:
-        return mol_copy
-
-    return None
+    return mol_copy
 
 
 def conf_distance(mol1: Chem.rdchem.Mol, mol2: Chem.rdchem.Mol, fix_order: bool = True) -> float:
@@ -231,7 +228,7 @@ def smiles_from_mol(mol: Chem.rdchem.Mol, canonical: bool = True, explicit_hs: b
     Args:
         mol (Chem.Mol): RDKit molecule object
         canonical (bool): Whether to create a canonical SMILES, default True
-        explicit_hs (bool): Whether to embed hydrogens in the mol before creating a SMILES, default False. If True 
+        explicit_hs (bool): Whether to embed hydrogens in the mol before creating a SMILES, default False. If True
                 this will create a new mol with all hydrogens embedded. Note that the SMILES created by doing this
                 is not necessarily the same as creating a SMILES showing implicit hydrogens.
 

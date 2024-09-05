@@ -544,8 +544,7 @@ def rotate(coords: torch.Tensor, rotation: Union[Rotation, TupleRot]):
     coords = coords.cpu().numpy()
 
     rotated = rotation.apply(coords)
-    rotated = torch.tensor(rotated, device=device)
-    return rotated
+    return torch.tensor(rotated, device=device)
 
 
 def cartesian_to_spherical(coords):
@@ -553,8 +552,7 @@ def cartesian_to_spherical(coords):
     radii = torch.sqrt(sqrd_dists)
     inclination = torch.acos(coords[..., 2] / radii).unsqueeze(2)
     azimuth = torch.atan2(coords[..., 1], coords[..., 0]).unsqueeze(2)
-    spherical = torch.cat((radii.unsqueeze(2), inclination, azimuth), dim=-1)
-    return spherical
+    return torch.cat((radii.unsqueeze(2), inclination, azimuth), dim=-1)
 
 
 # *************************************************************************************************

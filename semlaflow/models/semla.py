@@ -257,8 +257,7 @@ class CoordAttention(torch.nn.Module):
         updates = updates * weights.unsqueeze(1)
 
         # updates shape [B, 3, N, P] -> [B, S, N, 3]
-        updates = self.attn_proj(updates).transpose(1, -1)
-        return updates
+        return self.attn_proj(updates).transpose(1, -1)
 
 
 class LengthsMLP(torch.nn.Module):
@@ -327,8 +326,7 @@ class EquivariantMLP(torch.nn.Module):
         attentions = inv_feats.unsqueeze(-1) * proj_sets.unsqueeze(-2)
         attentions = attentions.sum(-1)
 
-        coords_out = self.attn_proj(attentions).transpose(1, -1)
-        return coords_out
+        return self.attn_proj(attentions).transpose(1, -1)
 
 
 class NodeFeedForward(torch.nn.Module):
@@ -844,6 +842,7 @@ class SemlaGenerator(MolecularGenerator):
 
         # Embed the number of atoms in a mol into a small vector and concat this to inv feats for each atom
         n_atoms = atom_mask.sum(dim=-1, keepdim=True)
+        # TODO: assert that n_atoms not larger than max_atoms
         size_emb = self.size_emb(n_atoms).expand(-1, inv_feats.size(1), -1)
 
         inv_feats = torch.cat((inv_feats, size_emb), dim=-1)
