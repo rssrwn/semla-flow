@@ -23,21 +23,13 @@ class VanillaEgnnLayer(torch.nn.Module):
         phi_e_out = d_model if d_pred_edge is None else d_model + d_pred_edge
 
         self.phi_e = torch.nn.Sequential(
-            torch.nn.Linear(input_feats, d_model),
-            torch.nn.SiLU(),
-            torch.nn.Linear(d_model, phi_e_out),
-            torch.nn.SiLU()
+            torch.nn.Linear(input_feats, d_model), torch.nn.SiLU(), torch.nn.Linear(d_model, phi_e_out), torch.nn.SiLU()
         )
 
-        self.phi_att = torch.nn.Sequential(
-            torch.nn.Linear(d_model, 1),
-            torch.nn.Sigmoid()
-        )
+        self.phi_att = torch.nn.Sequential(torch.nn.Linear(d_model, 1), torch.nn.Sigmoid())
 
         self.phi_h = torch.nn.Sequential(
-            torch.nn.Linear(d_model * 2, d_model),
-            torch.nn.SiLU(),
-            torch.nn.Linear(d_model, d_model)
+            torch.nn.Linear(d_model * 2, d_model), torch.nn.SiLU(), torch.nn.Linear(d_model, d_model)
         )
 
         self.phi_x = torch.nn.Sequential(
@@ -45,7 +37,7 @@ class VanillaEgnnLayer(torch.nn.Module):
             torch.nn.SiLU(),
             torch.nn.Linear(d_model, d_model),
             torch.nn.SiLU(),
-            torch.nn.Linear(d_model, 1)
+            torch.nn.Linear(d_model, 1),
         )
 
         if norm:
@@ -73,8 +65,8 @@ class VanillaEgnnLayer(torch.nn.Module):
 
         edge_messages = self._compute_edge_messages(inv_feats, edge_feats)
         if self.d_pred_edge is not None:
-            edge_pred = edge_messages[:, :, :, self.d_model:]
-            edge_messages = edge_messages[:, :, :, :self.d_model]
+            edge_pred = edge_messages[:, :, :, self.d_model :]
+            edge_messages = edge_messages[:, :, :, : self.d_model]
 
         attentions = self.phi_att(edge_messages)
         edge_messages = attentions * edge_messages
@@ -235,7 +227,7 @@ class VanillaEgnnGenerator(MolecularGenerator):
             "n_atom_feats": n_atom_feats,
             "d_edge": d_edge,
             "n_edge_types": n_edge_types,
-            "self_cond": self_cond
+            "self_cond": self_cond,
         }
 
         super().__init__(**hparams)
@@ -244,25 +236,17 @@ class VanillaEgnnGenerator(MolecularGenerator):
         self.dynamics = VanillaEgnnDynamics(d_model, n_layers, d_edge)
 
         self.edge_in_proj = torch.nn.Sequential(
-            torch.nn.Linear(n_edge_types, d_edge),
-            torch.nn.SiLU(inplace=False),
-            torch.nn.Linear(d_edge, d_edge)
+            torch.nn.Linear(n_edge_types, d_edge), torch.nn.SiLU(inplace=False), torch.nn.Linear(d_edge, d_edge)
         )
         self.edge_out_proj = torch.nn.Sequential(
-            torch.nn.Linear(d_edge, d_edge),
-            torch.nn.SiLU(inplace=False),
-            torch.nn.Linear(d_edge, n_edge_types)
+            torch.nn.Linear(d_edge, d_edge), torch.nn.SiLU(inplace=False), torch.nn.Linear(d_edge, n_edge_types)
         )
 
         self.classifier_head = torch.nn.Sequential(
-            torch.nn.Linear(d_model, d_model),
-            torch.nn.SiLU(inplace=False),
-            torch.nn.Linear(d_model, vocab_size)
+            torch.nn.Linear(d_model, d_model), torch.nn.SiLU(inplace=False), torch.nn.Linear(d_model, vocab_size)
         )
         self.charge_head = torch.nn.Sequential(
-            torch.nn.Linear(d_model, d_model),
-            torch.nn.SiLU(inplace=False),
-            torch.nn.Linear(d_model, 7)
+            torch.nn.Linear(d_model, d_model), torch.nn.SiLU(inplace=False), torch.nn.Linear(d_model, 7)
         )
 
     def forward(
@@ -298,11 +282,7 @@ class VanillaEgnnGenerator(MolecularGenerator):
         edge_feats = self.edge_in_proj(edge_feats.float())
 
         pred_coords, pred_feats, pred_bonds = self.dynamics(
-            coords,
-            atom_feats,
-            adj_matrix,
-            atom_mask=atom_mask,
-            edge_feats=edge_feats
+            coords, atom_feats, adj_matrix, atom_mask=atom_mask, edge_feats=edge_feats
         )
 
         type_logits = self.classifier_head(pred_feats)

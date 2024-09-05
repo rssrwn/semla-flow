@@ -387,13 +387,14 @@ class MolecularCFM(L.LightningModule):
         super().__init__()
 
         if type_strategy not in ["mse", "ce", "mask"]:
-            raise ValueError(f"Unsupported type training strategy '{type_strategy}'")
+            raise ValueError(f"Unsupported type training strategy '{type_strategy}'. "
+                             + "Supported are `mse`, `ce` or `mask`.")
 
         if bond_strategy not in ["ce", "mask"]:
-            raise ValueError(f"Unsupported bond training strategy '{bond_strategy}'")
+            raise ValueError(f"Unsupported bond training strategy '{bond_strategy}'. Supported are `ce` or `mask`.")
 
         if lr_schedule not in ["constant", "one-cycle"]:
-            raise ValueError(f"LR scheduler {lr_schedule} not supported.")
+            raise ValueError(f"LR scheduler {lr_schedule} not supported. Supported are `constant` or `one-cycle`.")
 
         if lr_schedule == "one-cycle" and total_steps is None:
             raise ValueError("total_steps must be provided when using the one-cycle LR scheduler.")
@@ -401,7 +402,8 @@ class MolecularCFM(L.LightningModule):
         if distill and (type_strategy == "mask" or bond_strategy == "mask"):
             raise ValueError("Distilled training with masking strategy is not supported.")
 
-        # Note that warm_up_steps is currently ignored if schedule is one-cycle
+        if lr_schedule == "one-cycle" and warm_up_steps is not None:
+            print("Note: warm_up_steps is currently ignored if schedule is one-cycle")
 
         self.gen = gen
         self.vocab = vocab
@@ -666,7 +668,7 @@ class MolecularCFM(L.LightningModule):
             scheduler = OneCycleLR(opt, max_lr=self.lr, total_steps=self.total_steps, pct_start=0.3)
 
         else:
-            raise ValueError(f"LR schedule {self.lr_schedule} is not supported.")
+            raise ValueError("Only `constant` or `one-cycle` LR schedules are supported.")
 
         config = {
             "optimizer": opt,

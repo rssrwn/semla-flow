@@ -24,6 +24,7 @@ def load_smol_data(data_path, smol_cls):
 
 # *** Abstract class for all Smol data types ***
 
+
 class SmolDataset(ABC, torch.utils.data.Dataset):
     def __init__(self, smol_data, transform=None):
         super().__init__()
@@ -57,6 +58,7 @@ class SmolDataset(ABC, torch.utils.data.Dataset):
 
 # *** SmolDataset implementations ***
 
+
 class GeometricDataset(SmolDataset):
     def sample(self, n_items, replacement=False):
         mol_samples = np.random.choice(self._data.to_list(), n_items, replace=replacement)
@@ -74,6 +76,7 @@ class GeometricDataset(SmolDataset):
 
 
 # *** Other useful datasets ***
+
 
 class SmolPairDataset(torch.utils.data.Dataset):
     """A dataset which returns pairs of SmolMol objects"""
@@ -93,10 +96,7 @@ class SmolPairDataset(torch.utils.data.Dataset):
     # TODO stop hparams clashing from different sources
     @property
     def hparams(self):
-        return {
-            **self.from_dataset.hparams,
-            **self.to_dataset.hparams
-        }
+        return {**self.from_dataset.hparams, **self.to_dataset.hparams}
 
     @property
     def lengths(self):

@@ -46,13 +46,13 @@ class GatedEquiUpdate(torch.nn.Module):
         """
 
         equi_feats_proj = self.equi_proj(equi_feats.transpose(2, 3)).transpose(2, 3)
-        equi_feats_out = equi_feats_proj[:, :, :self.n_equi_feats, :]
-        norms = torch.linalg.vector_norm(equi_feats_proj[:, :, self.n_equi_feats:, :], dim=-1) + self.eps
+        equi_feats_out = equi_feats_proj[:, :, : self.n_equi_feats, :]
+        norms = torch.linalg.vector_norm(equi_feats_proj[:, :, self.n_equi_feats :, :], dim=-1) + self.eps
 
         inv_feats_cat = torch.cat((inv_feats, norms), dim=-1)
         inv_feats_proj = self.inv_proj(inv_feats_cat)
-        inv_feats_out = inv_feats_proj[:, :, :self.d_model]
-        inv_gate_feats = inv_feats_proj[:, :, self.d_model:]
+        inv_feats_out = inv_feats_proj[:, :, : self.d_model]
+        inv_gate_feats = inv_feats_proj[:, :, self.d_model :]
 
         equi_feats_out = equi_feats_out * inv_gate_feats.unsqueeze(-1)
 
@@ -74,7 +74,7 @@ class EqgatLayer(torch.nn.Module):
         self.pairwise_mlp = torch.nn.Sequential(
             torch.nn.Linear(pairwise_input_feats, d_model),
             torch.nn.SiLU(),
-            torch.nn.Linear(d_model, pairwise_output_feats)
+            torch.nn.Linear(d_model, pairwise_output_feats),
         )
 
         self.node_proj = torch.nn.Linear(d_model, d_model, bias=False)
@@ -127,11 +127,11 @@ class EqgatLayer(torch.nn.Module):
         d_end = self.d_model + (2 * self.n_equi_feats) + self.d_edge
 
         pairwise_mlp_out = self.pairwise_mlp(atom_in_feats)
-        a = pairwise_mlp_out[:, :, :, :self.d_model]
-        b = pairwise_mlp_out[:, :, :, self.d_model:c_start]
+        a = pairwise_mlp_out[:, :, :, : self.d_model]
+        b = pairwise_mlp_out[:, :, :, self.d_model : c_start]
         c = pairwise_mlp_out[:, :, :, c_start:d_start]
         d = pairwise_mlp_out[:, :, :, d_start:d_end]
-        s = pairwise_mlp_out[:, :, :, d_end:d_end + 1]
+        s = pairwise_mlp_out[:, :, :, d_end : d_end + 1]
 
         # Compute attention weights
         attn_mask = adj_to_attn_mask(adj_matrix)
@@ -181,24 +181,13 @@ class EqgatLayer(torch.nn.Module):
 
 
 class EqgatPredictionHead(torch.nn.Module):
-    def __init__(
-        self,
-        d_model,
-        n_equi_feats,
-        d_edge,
-        vocab_size,
-        n_edge_types,
-        n_charges
-    ):
+    def __init__(self, d_model, n_equi_feats, d_edge, vocab_size, n_edge_types, n_charges):
         super().__init__()
 
         self.d_model = d_model
         self.n_equi_feats = n_equi_feats
 
-        self.inv_proj = torch.nn.Sequential(
-            torch.nn.Linear(d_model, d_model),
-            torch.nn.SiLU()
-        )
+        self.inv_proj = torch.nn.Sequential(torch.nn.Linear(d_model, d_model), torch.nn.SiLU())
         self.edge_feat_proj = torch.nn.Linear(d_edge, d_edge)
         self.equi_proj = torch.nn.Linear(n_equi_feats, 1, bias=False)
         self.atom_proj = torch.nn.Linear(d_model, vocab_size)
@@ -206,9 +195,7 @@ class EqgatPredictionHead(torch.nn.Module):
 
         edge_in_feats = (d_model * 2) + d_edge + 1
         self.bond_proj = torch.nn.Sequential(
-            torch.nn.Linear(edge_in_feats, d_edge),
-            torch.nn.SiLU(),
-            torch.nn.Linear(d_edge, n_edge_types)
+            torch.nn.Linear(edge_in_feats, d_edge), torch.nn.SiLU(), torch.nn.Linear(d_edge, n_edge_types)
         )
 
     def forward(self, coords, inv_feats, equi_feats, adj_matrix, atom_mask, edge_feats):
@@ -284,12 +271,7 @@ class EqgatDynamics(torch.nn.Module):
 
         for layer in self.layers:
             coords, inv_feats, equi_feats, edge_feats = layer(
-                coords,
-                inv_feats,
-                equi_feats,
-                adj_matrix,
-                atom_mask,
-                edge_feats
+                coords, inv_feats, equi_feats, adj_matrix, atom_mask, edge_feats
             )
 
         return coords, inv_feats, equi_feats, edge_feats
@@ -314,7 +296,7 @@ class EqgatGenerator(MolecularGenerator):
             "vocab_size": vocab_size,
             "n_atom_feats": n_atom_feats,
             "d_edge": d_edge,
-            "n_edge_types": n_edge_types
+            "n_edge_types": n_edge_types,
         }
 
         super().__init__(**hparams)
@@ -326,20 +308,11 @@ class EqgatGenerator(MolecularGenerator):
 
         self.feat_proj = torch.nn.Linear(n_atom_feats, d_model)
         self.edge_in_proj = torch.nn.Sequential(
-            torch.nn.Linear(n_edge_types, d_edge),
-            torch.nn.SiLU(inplace=False),
-            torch.nn.Linear(d_edge, d_edge)
+            torch.nn.Linear(n_edge_types, d_edge), torch.nn.SiLU(inplace=False), torch.nn.Linear(d_edge, d_edge)
         )
 
         self.dynamics = EqgatDynamics(d_model, n_layers, n_equi_feats, d_edge)
-        self.pred_head = EqgatPredictionHead(
-            d_model,
-            n_equi_feats,
-            d_edge,
-            vocab_size,
-            n_edge_types,
-            n_charges
-        )
+        self.pred_head = EqgatPredictionHead(d_model, n_equi_feats, d_edge, vocab_size, n_edge_types, n_charges)
 
     def forward(
         self,
@@ -376,14 +349,7 @@ class EqgatGenerator(MolecularGenerator):
 
         equi_feats = torch.zeros_like(coords.unsqueeze(2)).repeat(1, 1, self.n_equi_feats, 1)
 
-        out = self.dynamics(
-            coords,
-            inv_feats_proj,
-            equi_feats,
-            adj_matrix,
-            atom_mask,
-            edge_feats_proj
-        )
+        out = self.dynamics(coords, inv_feats_proj, equi_feats, adj_matrix, atom_mask, edge_feats_proj)
         coords, atom_feats, equi_feats, edge_feats = out
 
         pred = self.pred_head(coords, atom_feats, equi_feats, adj_matrix, atom_mask, edge_feats)

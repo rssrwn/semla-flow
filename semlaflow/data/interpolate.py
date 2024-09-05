@@ -52,7 +52,7 @@ class GeometricNoiseSampler(NoiseSampler):
         scale_ot: bool = False,
         zero_com: bool = True,
         type_mask_index: Optional[int] = None,
-        bond_mask_index: Optional[int] = None
+        bond_mask_index: Optional[int] = None,
     ):
         if coord_noise != "gaussian":
             raise NotImplementedError(f"Coord noise {coord_noise} is not supported.")
@@ -81,7 +81,7 @@ class GeometricNoiseSampler(NoiseSampler):
             "type-noise": self.type_noise,
             "bond-noise": self.bond_noise,
             "noise-scale-ot": self.scale_ot,
-            "zero-com": self.zero_com
+            "zero-com": self.zero_com,
         }
 
     def sample_molecule(self, n_atoms: int) -> GeometricMol:
@@ -156,7 +156,7 @@ class GeometricInterpolant(Interpolant):
         batch_ot: bool = False,
         time_alpha: float = 1.0,
         time_beta: float = 1.0,
-        fixed_time: Optional[float] = None
+        fixed_time: Optional[float] = None,
     ):
 
         if fixed_time is not None and (fixed_time < 0 or fixed_time > 1):
@@ -198,7 +198,7 @@ class GeometricInterpolant(Interpolant):
             "batch-ot": self.batch_ot,
             "time-alpha": self.time_alpha,
             "time-beta": self.time_beta,
-            **prior_hparams
+            **prior_hparams,
         }
 
         if self.fixed_time is not None:

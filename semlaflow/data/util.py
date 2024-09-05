@@ -2,7 +2,7 @@ import math
 import random
 from typing import Optional
 
-from torch.utils.data import Sampler, RandomSampler
+from torch.utils.data import RandomSampler, Sampler
 
 
 class BucketBatchSampler(Sampler):
@@ -13,7 +13,7 @@ class BucketBatchSampler(Sampler):
         batch_cost: float,
         bucket_costs: Optional[list[float]] = None,
         drop_last: bool = True,
-        round_batch_to_8: bool = False
+        round_batch_to_8: bool = False,
     ):
 
         # Modern GPUs can be more efficient when data is provided as a multiple of 8 (for 16-bit training)

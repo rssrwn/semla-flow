@@ -15,6 +15,7 @@ PICKLE_PROTOCOL = 4
 
 # *** Util functions ***
 
+
 def _check_unique(obj_list, name="objects"):
     if len(obj_list) != len(set(obj_list)):
         raise RuntimeError(f"{name} cannot contain duplicates")
@@ -27,6 +28,7 @@ def _check_type_all(obj_list, exp_type, name="list"):
 
 
 # *** Tokeniser Interface ***
+
 
 class Tokeniser(ABC):
     """Interface for tokeniser classes"""
@@ -47,6 +49,7 @@ class Tokeniser(ABC):
 
 
 # *** Vocabulary Implementations ***
+
 
 class Vocabulary:
     """Vocabulary class which maps tokens <--> indices"""

@@ -59,23 +59,10 @@ class PeriodicTable:
 
 PT = PeriodicTable()
 
-IDX_BOND_MAP = {
-    1: Chem.BondType.SINGLE,
-    2: Chem.BondType.DOUBLE,
-    3: Chem.BondType.TRIPLE,
-    4: Chem.BondType.AROMATIC
-}
+IDX_BOND_MAP = {1: Chem.BondType.SINGLE, 2: Chem.BondType.DOUBLE, 3: Chem.BondType.TRIPLE, 4: Chem.BondType.AROMATIC}
 BOND_IDX_MAP = {bond: idx for idx, bond in IDX_BOND_MAP.items()}
 
-IDX_CHARGE_MAP = {
-    0: 0,
-    1: 1,
-    2: 2,
-    3: 3,
-    4: -1,
-    5: -2,
-    6: -3
-}
+IDX_CHARGE_MAP = {0: 0, 1: 1, 2: 2, 3: 3, 4: -1, 5: -2, 6: -3}
 CHARGE_IDX_MAP = {charge: idx for idx, charge in IDX_CHARGE_MAP.items()}
 
 
@@ -84,6 +71,7 @@ CHARGE_IDX_MAP = {charge: idx for idx, charge in IDX_CHARGE_MAP.items()}
 # *************************************************************************************************
 
 # TODO merge these with check functions in other files
+
 
 def _check_shape_len(arr, allowed, name="object"):
     num_dims = len(arr.shape)
@@ -274,11 +262,7 @@ def mol_from_smiles(smiles: str, explicit_hs: bool = False) -> Union[Chem.rdchem
 
 
 def mol_from_atoms(
-    coords: ArrT,
-    tokens: list[str],
-    bonds: Optional[ArrT] = None,
-    charges: Optional[ArrT] = None,
-    sanitise=True
+    coords: ArrT, tokens: list[str], bonds: Optional[ArrT] = None, charges: Optional[ArrT] = None, sanitise=True
 ):
     """Create RDKit mol from atom coords and atom tokens (and optionally bonds)
 

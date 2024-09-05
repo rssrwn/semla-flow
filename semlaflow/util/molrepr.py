@@ -43,7 +43,7 @@ def _check_type(obj, obj_type, name="object"):
 def _check_shape_len(tensor, allowed, name="object"):
     num_dims = len(tensor.size())
     allowed = [allowed] if isinstance(allowed, int) else allowed
-    if num_dims not in allowed: 
+    if num_dims not in allowed:
         raise RuntimeError(f"Number of dimensions of {name} must be in {str(allowed)}, got {num_dims}")
 
 
@@ -270,7 +270,7 @@ class GeometricMol(SmolMol):
         charges: Optional[_T] = None,
         device: Optional[TDevice] = None,
         is_mmap: bool = False,
-        str_id: Optional[str] = None
+        str_id: Optional[str] = None,
     ):
         # Check that each tensor has correct number of dimensions
         _check_shape_len(coords, 2, "coords")
@@ -409,7 +409,7 @@ class GeometricMol(SmolMol):
             charges=obj["charges"],
             device=obj["device"],
             is_mmap=False,
-            str_id=obj["id"]
+            str_id=obj["id"],
         )
         return mol
 
@@ -458,7 +458,7 @@ class GeometricMol(SmolMol):
             "bond_types": self.bond_types,
             "charges": self.charges,
             "device": str(self.device),
-            "id": self._str_id
+            "id": self._str_id,
         }
         byte_obj = pickle.dumps(dict_repr, protocol=PICKLE_PROTOCOL)
         return byte_obj
@@ -485,7 +485,7 @@ class GeometricMol(SmolMol):
         atomics: Optional[_T] = None,
         bond_indices: Optional[_T] = None,
         bond_types: Optional[_T] = None,
-        charges: Optional[_T] = None
+        charges: Optional[_T] = None,
     ) -> GeometricMol:
 
         coords = self.coords if coords is None else coords
@@ -502,7 +502,7 @@ class GeometricMol(SmolMol):
             charges=charges,
             device=self.device,
             is_mmap=False,
-            str_id=self._str_id
+            str_id=self._str_id,
         )
         return obj
 
@@ -541,11 +541,7 @@ class GeometricMol(SmolMol):
         bond_types = self.bond_types[mask]
 
         mol_copy = self._copy_with(
-            coords=coords,
-            atomics=atomics,
-            bond_indices=bond_indices,
-            bond_types=bond_types,
-            charges=charges
+            coords=coords, atomics=atomics, bond_indices=bond_indices, bond_types=bond_types, charges=charges
         )
         return mol_copy
 
@@ -669,10 +665,7 @@ class GeometricMolBatch(SmolBatch[GeometricMol]):
     # TODO add bonds and charges
     @staticmethod
     def from_tensors(
-        coords: _T,
-        atomics: Optional[_T] = None,
-        num_atoms: Optional[_T] = None,
-        is_mmap: bool = False
+        coords: _T, atomics: Optional[_T] = None, num_atoms: Optional[_T] = None, is_mmap: bool = False
     ) -> GeometricMolBatch:
 
         _check_shape_len(coords, 3, "coords")
@@ -693,8 +686,8 @@ class GeometricMolBatch(SmolBatch[GeometricMol]):
 
         mols = []
         for idx in range(coords.size(0)):
-            mol_coords = coords[idx, :seq_lens[idx]]
-            mol_types = atomics[idx, :seq_lens[idx]] if atomics is not None else None
+            mol_coords = coords[idx, : seq_lens[idx]]
+            mol_types = atomics[idx, : seq_lens[idx]] if atomics is not None else None
             mol = GeometricMol(mol_coords, mol_types, device=device, is_mmap=is_mmap)
             mols.append(mol)
 

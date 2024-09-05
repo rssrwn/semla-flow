@@ -1,19 +1,17 @@
 import argparse
-from pathlib import Path
 from functools import partial
+from pathlib import Path
 
-import torch
-import numpy as np
 import lightning as L
+import numpy as np
+import torch
 
 import semlaflow.scriptutil as util
+from semlaflow.data.datamodules import GeometricInterpolantDM
+from semlaflow.data.datasets import GeometricDataset
+from semlaflow.data.interpolate import GeometricInterpolant, GeometricNoiseSampler
 from semlaflow.models.fm import Integrator, MolecularCFM
 from semlaflow.models.semla import EquiInvDynamics, SemlaGenerator
-
-from semlaflow.data.datasets import GeometricDataset
-from semlaflow.data.datamodules import GeometricInterpolantDM
-from semlaflow.data.interpolate import GeometricInterpolant, GeometricNoiseSampler
-
 
 # Default script arguments
 DEFAULT_DATASET_SPLIT = "test"
@@ -61,7 +59,7 @@ def load_model(args, vocab):
             n_edge_types=n_bond_types,
             self_cond=hparams["self_cond"],
             size_emb=hparams["size_emb"],
-            max_atoms=hparams["max_atoms"]
+            max_atoms=hparams["max_atoms"],
         )
 
     elif hparams["architecture"] == "eqgat":
@@ -74,7 +72,7 @@ def load_model(args, vocab):
             vocab.size,
             hparams["n_atom_feats"],
             hparams["d_edge"],
-            hparams["n_edge_types"]
+            hparams["n_edge_types"],
         )
 
     elif hparams["architecture"] == "egnn":
@@ -90,13 +88,15 @@ def load_model(args, vocab):
             vocab.size,
             hparams["n_atom_feats"],
             d_edge=hparams["d_edge"],
-            n_edge_types=n_bond_types
+            n_edge_types=n_bond_types,
         )
 
     else:
         raise ValueError(f"Unknown architecture hyperparameter.")
 
-    type_mask_index = vocab.indices_from_tokens(["<MASK>"])[0] if hparams["train-type-interpolation"] == "mask" else None
+    type_mask_index = (
+        vocab.indices_from_tokens(["<MASK>"])[0] if hparams["train-type-interpolation"] == "mask" else None
+    )
     bond_mask_index = None
 
     integrator = Integrator(
@@ -105,7 +105,7 @@ def load_model(args, vocab):
         bond_strategy=hparams["integration-bond-strategy"],
         type_mask_index=type_mask_index,
         bond_mask_index=bond_mask_index,
-        cat_noise_level=args.cat_sampling_noise_level
+        cat_noise_level=args.cat_sampling_noise_level,
     )
     fm_model = MolecularCFM.load_from_checkpoint(
         args.ckpt_path,
@@ -114,7 +114,7 @@ def load_model(args, vocab):
         integrator=integrator,
         type_mask_index=type_mask_index,
         bond_mask_index=bond_mask_index,
-        **hparams
+        **hparams,
     )
     return fm_model
 
@@ -130,7 +130,7 @@ def build_dm(args, hparams, vocab):
 
     else:
         raise ValueError(f"Unknown dataset {args.dataset}")
- 
+
     n_bond_types = 5
     transform = partial(util.mol_transform, vocab=vocab, n_bonds=n_bond_types, coord_std=coord_std)
 
@@ -156,7 +156,7 @@ def build_dm(args, hparams, vocab):
         scale_ot=hparams["val-prior-noise-scale-ot"],
         zero_com=True,
         type_mask_index=type_mask_index,
-        bond_mask_index=bond_mask_index
+        bond_mask_index=bond_mask_index,
     )
     eval_interpolant = GeometricInterpolant(
         prior_sampler,
@@ -164,7 +164,7 @@ def build_dm(args, hparams, vocab):
         type_interpolation=hparams["val-type-interpolation"],
         bond_interpolation=hparams["val-bond-interpolation"],
         equivariant_ot=False,
-        batch_ot=False
+        batch_ot=False,
     )
     dm = GeometricInterpolantDM(
         None,
@@ -174,7 +174,7 @@ def build_dm(args, hparams, vocab):
         test_interpolant=eval_interpolant,
         bucket_limits=bucket_limits,
         bucket_cost_scale=args.bucket_cost_scale,
-        pad_to_bucket=False
+        pad_to_bucket=False,
     )
     return dm
 
@@ -191,11 +191,7 @@ def evaluate(args, model, dm, metrics, stab_metrics):
     for replicate_index in range(args.n_replicates):
         print(f"Running replicate {replicate_index + 1} out of {args.n_replicates}")
         molecules, _, stabilities = util.generate_molecules(
-            model,
-            dm,
-            args.integration_steps,
-            args.ode_sampling_strategy,
-            stabilities=True
+            model, dm, args.integration_steps, args.ode_sampling_strategy, stabilities=True
         )
 
         print("Calculating metrics...")

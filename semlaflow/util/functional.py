@@ -155,10 +155,7 @@ def _pad_edges(edges, max_edges, value=0):
     """
 
     num_edges = edges.size(0)
-    mask_kwargs = {
-        "dtype": torch.int64,
-        "device": edges.device
-    }
+    mask_kwargs = {"dtype": torch.int64, "device": edges.device}
 
     if num_edges > max_edges:
         raise ValueError("Number of edges in edge tensor to be padded cannot be greater than max_edges.")

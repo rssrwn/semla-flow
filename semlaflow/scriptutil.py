@@ -31,7 +31,7 @@ COMPILER_CACHE_SIZE = 128
 
 def disable_lib_stdout():
     pybel.ob.obErrorLog.StopLogging()
-    RDLogger.DisableLog('rdApp.*')
+    RDLogger.DisableLog("rdApp.*")
 
 
 # Need to ensure the limits are large enough when using OT since lots of preprocessing needs to be done on the batches
@@ -57,6 +57,7 @@ def configure_fs(limit=4096):
             print("Limit change unsuccessful. Using torch file_system file sharing strategy instead.")
 
             import torch.multiprocessing
+
             torch.multiprocessing.set_sharing_strategy("file_system")
 
     else:
@@ -142,12 +143,9 @@ def init_metrics(data_path, model):
         "energy-per-atom": Metrics.AverageEnergy(per_atom=True),
         "strain": Metrics.AverageStrainEnergy(),
         "strain-per-atom": Metrics.AverageStrainEnergy(per_atom=True),
-        "opt-rmsd": Metrics.AverageOptRmsd()
+        "opt-rmsd": Metrics.AverageOptRmsd(),
     }
-    stability_metrics = {
-        "atom-stability": Metrics.AtomStability(),
-        "molecule-stability": Metrics.MoleculeStability()
-    }
+    stability_metrics = {"atom-stability": Metrics.AtomStability(), "molecule-stability": Metrics.MoleculeStability()}
 
     metrics = MetricCollection(metrics, compute_groups=False)
     stability_metrics = MetricCollection(stability_metrics, compute_groups=False)
@@ -189,10 +187,7 @@ def calc_metrics_(rdkit_mols, metrics, stab_metrics=None, mol_stabs=None):
     stab_metrics.update(mol_stabs)
     stab_results = stab_metrics.compute()
 
-    results = {
-        **results,
-        **stab_results
-    }
+    results = {**results, **stab_results}
     return results
 
 

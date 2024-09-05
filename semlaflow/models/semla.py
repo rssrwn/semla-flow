@@ -108,9 +108,7 @@ class EdgeMessages(torch.nn.Module):
 
         self.node_proj = torch.nn.Linear(d_model, d_message)
         self.message_mlp = torch.nn.Sequential(
-            torch.nn.Linear(in_feats, d_ff),
-            torch.nn.SiLU(inplace=False),
-            torch.nn.Linear(d_ff, d_out)
+            torch.nn.Linear(in_feats, d_ff), torch.nn.SiLU(inplace=False), torch.nn.Linear(d_ff, d_out)
         )
 
     def forward(self, coords, node_feats, node_mask, edge_feats=None):
@@ -202,7 +200,7 @@ class NodeAttention(torch.nn.Module):
         attn_out = torch.bmm(attentions, head_feats)
 
         # Apply variance preserving updates as proposed in GNN-VPA (https://arxiv.org/abs/2403.04747)
-        weights = torch.sqrt((attentions ** 2).sum(dim=-1))
+        weights = torch.sqrt((attentions**2).sum(dim=-1))
         attn_out = attn_out * weights.unsqueeze(-1)
 
         attn_out = attn_out.unflatten(0, (-1, self.n_attn_heads))
@@ -253,7 +251,7 @@ class CoordAttention(torch.nn.Module):
         updates = updates.sum(dim=3)
 
         # Apply variance preserving updates as proposed in GNN-VPA (https://arxiv.org/abs/2403.04747)
-        weights = torch.sqrt((attentions ** 2).sum(dim=2))
+        weights = torch.sqrt((attentions**2).sum(dim=2))
         updates = updates * weights.unsqueeze(1)
 
         # updates shape [B, 3, N, P] -> [B, S, N, 3]
@@ -267,9 +265,7 @@ class LengthsMLP(torch.nn.Module):
         d_ff = d_model * 4 if d_ff is None else d_ff
 
         self.node_ff = torch.nn.Sequential(
-            torch.nn.Linear(d_model + n_coord_sets, d_ff),
-            torch.nn.SiLU(inplace=False),
-            torch.nn.Linear(d_ff, d_model)
+            torch.nn.Linear(d_model + n_coord_sets, d_ff), torch.nn.SiLU(inplace=False), torch.nn.Linear(d_ff, d_model)
         )
 
     def forward(self, coord_sets, node_feats):
@@ -297,9 +293,7 @@ class EquivariantMLP(torch.nn.Module):
         proj_sets = n_coord_sets if proj_sets is None else proj_sets
 
         self.node_proj = torch.nn.Sequential(
-            torch.nn.Linear(d_model, proj_sets),
-            torch.nn.SiLU(inplace=False),
-            torch.nn.Linear(proj_sets, proj_sets)
+            torch.nn.Linear(d_model, proj_sets), torch.nn.SiLU(inplace=False), torch.nn.Linear(proj_sets, proj_sets)
         )
         self.coord_proj = torch.nn.Linear(n_coord_sets, proj_sets, bias=False)
         self.attn_proj = torch.nn.Linear(proj_sets, n_coord_sets, bias=False)
@@ -373,9 +367,7 @@ class BondRefine(torch.nn.Module):
 
         self.node_proj = torch.nn.Linear(d_model, d_message)
         self.message_mlp = torch.nn.Sequential(
-            torch.nn.Linear(in_feats, d_ff),
-            torch.nn.SiLU(inplace=False),
-            torch.nn.Linear(d_ff, d_edge)
+            torch.nn.Linear(in_feats, d_ff), torch.nn.SiLU(inplace=False), torch.nn.Linear(d_ff, d_edge)
         )
 
     def forward(self, coords, node_feats, node_mask, edge_feats):
@@ -428,7 +420,7 @@ class EquiMessagePassingLayer(torch.nn.Module):
         d_edge_in=None,
         d_edge_out=None,
         coord_norm="length",
-        eps=1e-6
+        eps=1e-6,
     ):
         super().__init__()
 
@@ -462,13 +454,7 @@ class EquiMessagePassingLayer(torch.nn.Module):
             coord_norm=coord_norm,
         )
         self.message_ff = EdgeMessages(
-            d_model,
-            d_message,
-            d_message_out,
-            n_coord_sets,
-            d_ff=d_message_hidden,
-            d_edge=d_edge_in,
-            eps=eps
+            d_model, d_message, d_message_out, n_coord_sets, d_ff=d_message_hidden, d_edge=d_edge_in, eps=eps
         )
         self.coord_attn = CoordAttention(n_coord_sets, self.d_coord_message, coord_norm=coord_norm, eps=eps)
         self.node_attn = NodeAttention(d_model, n_attn_heads, d_attn=d_attn)
@@ -480,7 +466,7 @@ class EquiMessagePassingLayer(torch.nn.Module):
             "d_message": self.d_message,
             "n_coord_sets": self.n_coord_sets,
             "n_attn_heads": self.n_attn_heads,
-            "d_message_hidden": self.d_message_hidden
+            "d_message_hidden": self.d_message_hidden,
         }
 
     def forward(self, coords, node_feats, adj_matrix, node_mask, edge_feats=None):
@@ -509,14 +495,14 @@ class EquiMessagePassingLayer(torch.nn.Module):
         node_feats = node_feats + node_updates
 
         messages = self.message_ff(coords, node_feats, node_mask, edge_feats=edge_feats)
-        node_messages = messages[:, :, :, :self.n_attn_heads]
-        coord_messages = messages[:, :, :, self.n_attn_heads:(self.n_attn_heads + self.d_coord_message)]
+        node_messages = messages[:, :, :, : self.n_attn_heads]
+        coord_messages = messages[:, :, :, self.n_attn_heads : (self.n_attn_heads + self.d_coord_message)]
 
         node_feats = node_feats + self.node_attn(node_feats, node_messages, adj_matrix)
         coords = coords + self.coord_attn(coords, coord_messages, adj_matrix, node_mask)
 
         if self.d_edge_out is not None:
-            edge_out = messages[:, :, :, (self.n_attn_heads + self.d_coord_message):]
+            edge_out = messages[:, :, :, (self.n_attn_heads + self.d_coord_message) :]
             edge_out = edge_feats + edge_out if edge_feats is not None else edge_out
             return coords, node_feats, edge_out
 
@@ -541,7 +527,7 @@ class EquiInvDynamics(torch.nn.Module):
         bond_refine=True,
         self_cond=False,
         coord_norm="length",
-        eps=1e-6
+        eps=1e-6,
     ):
         super().__init__()
 
@@ -564,7 +550,7 @@ class EquiInvDynamics(torch.nn.Module):
             "bond_refine": bond_refine,
             "self_cond": self_cond,
             "coord_norm": coord_norm,
-            "eps": eps
+            "eps": eps,
         }
 
         self.d_model = d_model
@@ -580,7 +566,7 @@ class EquiInvDynamics(torch.nn.Module):
             n_attn_heads=n_attn_heads,
             d_message_hidden=d_message_hidden,
             coord_norm=coord_norm,
-            eps=eps
+            eps=eps,
         )
         layers = self._get_clones(core_layer, n_layers - extra_layers)
 
@@ -594,7 +580,7 @@ class EquiInvDynamics(torch.nn.Module):
                 d_message_hidden=None,
                 d_edge_in=d_edge,
                 coord_norm=coord_norm,
-                eps=eps
+                eps=eps,
             )
             out_layer = EquiMessagePassingLayer(
                 d_model,
@@ -604,7 +590,7 @@ class EquiInvDynamics(torch.nn.Module):
                 d_message_hidden=None,
                 d_edge_out=d_edge,
                 coord_norm=coord_norm,
-                eps=eps
+                eps=eps,
             )
             layers = [in_layer] + layers + [out_layer]
 
@@ -739,7 +725,7 @@ class SemlaGenerator(MolecularGenerator):
         n_edge_types=None,
         self_cond=False,
         size_emb=64,
-        max_atoms=256
+        max_atoms=256,
     ):
 
         hparams = {
@@ -751,7 +737,7 @@ class SemlaGenerator(MolecularGenerator):
             "self_cond": self_cond,
             "size_emb": size_emb,
             "max_atoms": max_atoms,
-            **dynamics.hparams
+            **dynamics.hparams,
         }
 
         super().__init__(**hparams)
@@ -765,14 +751,10 @@ class SemlaGenerator(MolecularGenerator):
             edge_in_feats = n_edge_types * 2 if self_cond else n_edge_types
 
             self.edge_in_proj = torch.nn.Sequential(
-                torch.nn.Linear(edge_in_feats, d_edge),
-                torch.nn.SiLU(inplace=False),
-                torch.nn.Linear(d_edge, d_edge)
+                torch.nn.Linear(edge_in_feats, d_edge), torch.nn.SiLU(inplace=False), torch.nn.Linear(d_edge, d_edge)
             )
             self.edge_out_proj = torch.nn.Sequential(
-                torch.nn.Linear(d_edge, d_edge),
-                torch.nn.SiLU(inplace=False),
-                torch.nn.Linear(d_edge, n_edge_types)
+                torch.nn.Linear(d_edge, d_edge), torch.nn.SiLU(inplace=False), torch.nn.Linear(d_edge, n_edge_types)
             )
 
         in_feats = n_atom_feats + vocab_size if self_cond else n_atom_feats
@@ -780,22 +762,16 @@ class SemlaGenerator(MolecularGenerator):
 
         self.size_emb = torch.nn.Embedding(max_atoms, size_emb)
         self.feat_proj = torch.nn.Sequential(
-            torch.nn.Linear(in_feats, d_model),
-            torch.nn.SiLU(inplace=False),
-            torch.nn.Linear(d_model, d_model)
+            torch.nn.Linear(in_feats, d_model), torch.nn.SiLU(inplace=False), torch.nn.Linear(d_model, d_model)
         )
 
         self.dynamics = dynamics
 
         self.atom_classifier_head = torch.nn.Sequential(
-            torch.nn.Linear(d_model, d_model),
-            torch.nn.SiLU(inplace=False),
-            torch.nn.Linear(d_model, vocab_size)
+            torch.nn.Linear(d_model, d_model), torch.nn.SiLU(inplace=False), torch.nn.Linear(d_model, vocab_size)
         )
         self.charge_classifier_head = torch.nn.Sequential(
-            torch.nn.Linear(d_model, d_model),
-            torch.nn.SiLU(inplace=False),
-            torch.nn.Linear(d_model, 7)
+            torch.nn.Linear(d_model, d_model), torch.nn.SiLU(inplace=False), torch.nn.Linear(d_model, 7)
         )
 
     def forward(
@@ -857,12 +833,7 @@ class SemlaGenerator(MolecularGenerator):
             edge_feats = self.edge_in_proj(edge_feats)
 
         out = self.dynamics(
-            coords,
-            atom_feats,
-            adj_matrix,
-            atom_mask=atom_mask,
-            edge_feats=edge_feats,
-            cond_coords=cond_coords
+            coords, atom_feats, adj_matrix, atom_mask=atom_mask, edge_feats=edge_feats, cond_coords=cond_coords
         )
 
         pred_edges = None

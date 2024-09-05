@@ -17,15 +17,15 @@ from semlaflow.models.semla import EquiInvDynamics, SemlaGenerator
 DEFAULT_DATASET = "geom-drugs"
 DEFAULT_ARCH = "semla"
 
-DEFAULT_D_MODEL = 256  # 384
-DEFAULT_N_LAYERS = 6  # 12
-DEFAULT_D_MESSAGE = 64  # 128
-DEFAULT_D_EDGE = 64  # 128
-DEFAULT_N_COORD_SETS = 32  # 64
-DEFAULT_N_ATTN_HEADS = 16  # 32
-DEFAULT_D_MESSAGE_HIDDEN = 64  # 128
+DEFAULT_D_MODEL = 384
+DEFAULT_N_LAYERS = 12
+DEFAULT_D_MESSAGE = 128
+DEFAULT_D_EDGE = 128
+DEFAULT_N_COORD_SETS = 64
+DEFAULT_N_ATTN_HEADS = 32
+DEFAULT_D_MESSAGE_HIDDEN = 128
 DEFAULT_COORD_NORM = "length"
-DEFAULT_SIZE_EMB = 32  # 64
+DEFAULT_SIZE_EMB = 64
 
 DEFAULT_MAX_ATOMS = 256
 
@@ -42,7 +42,7 @@ DEFAULT_LR_SCHEDULE = "constant"
 DEFAULT_WARM_UP_STEPS = 10000
 DEFAULT_BUCKET_COST_SCALE = "linear"
 
-DEFAULT_N_VALIDATION_MOLS = 1000  # 2000
+DEFAULT_N_VALIDATION_MOLS = 2000
 DEFAULT_VALIDATION_EPOCHS = 10
 DEFAULT_NUM_INFERENCE_STEPS = 100
 DEFAULT_CAT_SAMPLING_NOISE_LEVEL = 1
@@ -61,7 +61,7 @@ def build_model(args, dm, vocab):
         "dataset": args.dataset,
         "precision": "32",
         "architecture": args.arch,
-        **dm.hparams
+        **dm.hparams,
     }
 
     # Add 1 for the time (0 <= t <= 1 for flow matching)
@@ -79,7 +79,7 @@ def build_model(args, dm, vocab):
             d_edge=args.d_edge,
             bond_refine=True,
             self_cond=args.self_condition,
-            coord_norm=args.coord_norm
+            coord_norm=args.coord_norm,
         )
         egnn_gen = SemlaGenerator(
             args.d_model,
@@ -90,7 +90,7 @@ def build_model(args, dm, vocab):
             n_edge_types=n_bond_types,
             self_cond=args.self_condition,
             size_emb=args.size_emb,
-            max_atoms=args.max_atoms
+            max_atoms=args.max_atoms,
         )
 
     elif args.arch == "eqgat":
@@ -103,29 +103,18 @@ def build_model(args, dm, vocab):
         d_edge_eqgat = 128
 
         egnn_gen = EqgatGenerator(
-            d_model_eqgat,
-            n_layers_eqgat,
-            n_equi_feats_eqgat,
-            vocab.size,
-            n_atom_feats,
-            d_edge_eqgat,
-            n_bond_types
+            d_model_eqgat, n_layers_eqgat, n_equi_feats_eqgat, vocab.size, n_atom_feats, d_edge_eqgat, n_bond_types
         )
 
     elif args.arch == "egnn":
         from semlaflow.models.egnn import VanillaEgnnGenerator
 
         egnn_gen = VanillaEgnnGenerator(
-            args.d_model,
-            args.n_layers,
-            vocab.size,
-            n_atom_feats,
-            d_edge=args.d_edge,
-            n_edge_types=n_bond_types
+            args.d_model, args.n_layers, vocab.size, n_atom_feats, d_edge=args.d_edge, n_edge_types=n_bond_types
         )
 
     else:
-        raise ValueError(f"Unknown architecture '{args.arch}'. ")
+        raise ValueError(f"Unknown architecture '{args.arch}'; known: `semla`, `eqgat` or `egnn`")
 
     if args.dataset == "qm9":
         coord_scale = util.QM9_COORDS_STD_DEV
@@ -152,8 +141,10 @@ def build_model(args, dm, vocab):
         sampling_strategy = "dirichlet"
 
     else:
-        raise ValueError(f"Interpolation '{args.categorical_strategy}' is not supported. "
-                         + "Supported are: `mask`, `uniform-sample` and `dirichlet`")
+        raise ValueError(
+            f"Interpolation '{args.categorical_strategy}' is not supported. "
+            + "Supported are: `mask`, `uniform-sample` and `dirichlet`"
+        )
 
     train_steps = util.calc_train_steps(dm, args.epochs, args.acc_batches)
     train_smiles = None if args.trial_run else [mols.str_id for mols in dm.train_dataset]
@@ -166,7 +157,7 @@ def build_model(args, dm, vocab):
         bond_strategy=sampling_strategy,
         cat_noise_level=args.cat_sampling_noise_level,
         type_mask_index=type_mask_index,
-        bond_mask_index=bond_mask_index
+        bond_mask_index=bond_mask_index,
     )
 
     fm_model = MolecularCFM(
@@ -191,7 +182,7 @@ def build_model(args, dm, vocab):
         train_smiles=train_smiles,
         type_mask_index=type_mask_index,
         bond_mask_index=bond_mask_index,
-        **hparams
+        **hparams,
     )
     return fm_model
 
@@ -242,8 +233,10 @@ def build_dm(args, vocab):
         categorical_noise = "uniform-dist"
 
     else:
-        raise ValueError(f"Interpolation '{args.categorical_strategy}' is not supported. "
-                         + "Supported are: `mask`, `uniform-sample` and `dirichlet`")
+        raise ValueError(
+            f"Interpolation '{args.categorical_strategy}' is not supported. "
+            + "Supported are: `mask`, `uniform-sample` and `dirichlet`"
+        )
 
     scale_ot = False
     batch_ot = False
@@ -257,8 +250,10 @@ def build_dm(args, vocab):
         scale_ot = True
         equivariant_ot = True
     elif args.optimal_transport not in ["None", "none", None]:
-        raise ValueError(f"Unknown value for optimal_transport '{args.optimal_transport}'. "
-                         + "Acceted values: `batch`, `equivariant` and `scale`.")
+        raise ValueError(
+            f"Unknown value for optimal_transport '{args.optimal_transport}'. "
+            + "Acceted values: `batch`, `equivariant` and `scale`."
+        )
 
     # train_fixed_time = 0.5 if args.distill else None
     train_fixed_time = None
@@ -272,7 +267,7 @@ def build_dm(args, vocab):
         scale_ot=scale_ot,
         zero_com=True,
         type_mask_index=type_mask_index,
-        bond_mask_index=bond_mask_index
+        bond_mask_index=bond_mask_index,
     )
     train_interpolant = GeometricInterpolant(
         prior_sampler,
@@ -285,7 +280,7 @@ def build_dm(args, vocab):
         batch_ot=batch_ot,
         time_alpha=args.time_alpha,
         time_beta=args.time_beta,
-        fixed_time=train_fixed_time
+        fixed_time=train_fixed_time,
     )
     eval_interpolant = GeometricInterpolant(
         prior_sampler,
@@ -294,7 +289,7 @@ def build_dm(args, vocab):
         bond_interpolation=categorical_interpolation,
         equivariant_ot=False,
         batch_ot=False,
-        fixed_time=0.9
+        fixed_time=0.9,
     )
 
     dm = GeometricInterpolantDM(
@@ -307,7 +302,7 @@ def build_dm(args, vocab):
         test_interpolant=None,
         bucket_limits=padded_sizes,
         bucket_cost_scale=args.bucket_cost_scale,
-        pad_to_bucket=False
+        pad_to_bucket=False,
     )
     return dm
 
@@ -322,12 +317,7 @@ def build_trainer(args):
 
     logger = WandbLogger(project=project_name, save_dir="wandb", log_model=True)
     lr_monitor = LearningRateMonitor(logging_interval="step")
-    checkpointing = ModelCheckpoint(
-        every_n_epochs=val_check_epochs,
-        monitor="val-validity",
-        mode="max",
-        save_last=True
-    )
+    checkpointing = ModelCheckpoint(every_n_epochs=val_check_epochs, monitor="val-validity", mode="max", save_last=True)
 
     # No logger if doing a trial run
     logger = None if args.trial_run else logger
@@ -341,7 +331,7 @@ def build_trainer(args):
         gradient_clip_val=args.gradient_clip_val,
         check_val_every_n_epoch=val_check_epochs,
         callbacks=[lr_monitor, checkpointing],
-        precision="32"
+        precision="32",
     )
     return trainer
 

@@ -2,7 +2,8 @@
 
 # User specific paths
 datasets/
-checkpoints/
+wandb/
+output/
 
 # Editors
 .vscode/
