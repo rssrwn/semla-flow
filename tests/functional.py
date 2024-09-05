@@ -1,6 +1,7 @@
-import torch
 import unittest
+
 import numpy as np
+import torch
 from scipy.spatial.transform import Rotation
 
 import semlaflow.util.functional as smolF
@@ -74,24 +75,9 @@ class EdgeFnsTests(unittest.TestCase):
         exp_shape = (3, num_nodes, num_nodes)
         exp_type = torch.long
 
-        b0_exp = [
-            [0, 1, 1, 1],
-            [1, 0, 1, 1],
-            [1, 1, 0, 1],
-            [1, 1, 1, 0]
-        ]
-        b1_exp = [
-            [0, 1, 1, 0],
-            [1, 0, 1, 0],
-            [1, 1, 0, 0],
-            [0, 0, 0, 0]
-        ]
-        b2_exp = [
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0]
-        ]
+        b0_exp = [[0, 1, 1, 1], [1, 0, 1, 1], [1, 1, 0, 1], [1, 1, 1, 0]]
+        b1_exp = [[0, 1, 1, 0], [1, 0, 1, 0], [1, 1, 0, 0], [0, 0, 0, 0]]
+        b2_exp = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
 
         adjacency = smolF.adj_from_node_mask(node_mask)
 
@@ -103,18 +89,8 @@ class EdgeFnsTests(unittest.TestCase):
         self.assertEqual(b2_exp, adjacency[2].tolist())
 
     def test_edges_from_adj_correct_edges(self):
-        t1 = torch.tensor([
-            [1, 1, 1, 1],
-            [1, 0, 1, 0],
-            [0, 0, 0, 0],
-            [2, -1, 0, 0]
-        ])
-        t2 = torch.tensor([
-            [0, 0, 0, 0],
-            [0, 0, 0, 1],
-            [0, 0, 0, 0],
-            [0, 0, 0, 1]
-        ])
+        t1 = torch.tensor([[1, 1, 1, 1], [1, 0, 1, 0], [0, 0, 0, 0], [2, -1, 0, 0]])
+        t2 = torch.tensor([[0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 0, 0], [0, 0, 0, 1]])
         adjacency = torch.stack((t1, t2))
 
         exp_shape = (2, 8)
@@ -154,24 +130,12 @@ class EdgeFnsTests(unittest.TestCase):
     def test_adj_from_edges_correct_adj(self):
         num_nodes = 4
 
-        edges = torch.tensor([
-            [0, 0, 1],
-            [0, 2, 2],
-            [1, 0, 1],
-            [1, 3, 0],
-            [2, 2, 3],
-            [3, 1, 1]
-        ])
+        edges = torch.tensor([[0, 0, 1], [0, 2, 2], [1, 0, 1], [1, 3, 0], [2, 2, 3], [3, 1, 1]])
 
         exp_shape = (num_nodes, num_nodes)
         exp_type = torch.long
 
-        exp_adj = [
-            [1, 0, 2, 0],
-            [1, 0, 0, 0],
-            [0, 0, 3, 0],
-            [0, 1, 0, 0]
-        ]
+        exp_adj = [[1, 0, 2, 0], [1, 0, 0, 0], [0, 0, 3, 0], [0, 1, 0, 0]]
 
         edge_indices = edges[:, :2]
         edge_types = edges[:, 2]
@@ -186,40 +150,17 @@ class EdgeFnsTests(unittest.TestCase):
     def test_edges_from_nodes_fully_connected(self):
         num_nodes = 4
 
-        coords_b0 = torch.tensor([
-            [0.0, 0.0, 0.0],
-            [1.0, 1.0, 0.0],
-            [2.0, 3.0, 1.0],
-            [4.0, -2.0, -3.0]
-        ])
-        coords_b1 = torch.tensor([
-            [1.0, 1.0, 1.0],
-            [1.0, 1.0, 1.0],
-            [3.0, 4.0, 5.0],
-            [-1.0, -5.0, 2.0]
-        ])
+        coords_b0 = torch.tensor([[0.0, 0.0, 0.0], [1.0, 1.0, 0.0], [2.0, 3.0, 1.0], [4.0, -2.0, -3.0]])
+        coords_b1 = torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [3.0, 4.0, 5.0], [-1.0, -5.0, 2.0]])
         coords = torch.stack((coords_b0, coords_b1))
 
-        mask = torch.tensor([
-            [1, 1, 1, 1],
-            [1, 1, 0, 0]
-        ])
+        mask = torch.tensor([[1, 1, 1, 1], [1, 1, 0, 0]])
 
         exp_shape = (2, num_nodes, num_nodes)
         exp_type = torch.long
 
-        exp_adj_b0 = [
-            [0, 1, 1, 1],
-            [1, 0, 1, 1],
-            [1, 1, 0, 1],
-            [1, 1, 1, 0]
-        ]
-        exp_adj_b1 = [
-            [0, 1, 0, 0],
-            [1, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0]
-        ]
+        exp_adj_b0 = [[0, 1, 1, 1], [1, 0, 1, 1], [1, 1, 0, 1], [1, 1, 1, 0]]
+        exp_adj_b1 = [[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
 
         adjacency = smolF.edges_from_nodes(coords, node_mask=mask)
 
@@ -232,40 +173,17 @@ class EdgeFnsTests(unittest.TestCase):
     def test_edges_from_nodes_correct_neighbours(self):
         num_nodes = 4
 
-        coords_b0 = torch.tensor([
-            [0.0, 0.0, 0.0],
-            [1.0, 1.0, 0.0],
-            [2.0, 3.0, 1.0],
-            [4.0, -2.0, -3.0]
-        ])
-        coords_b1 = torch.tensor([
-            [1.0, 1.0, 1.0],
-            [1.0, 1.0, 1.0],
-            [3.0, 4.0, 5.0],
-            [-1.0, -5.0, 2.0]
-        ])
+        coords_b0 = torch.tensor([[0.0, 0.0, 0.0], [1.0, 1.0, 0.0], [2.0, 3.0, 1.0], [4.0, -2.0, -3.0]])
+        coords_b1 = torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [3.0, 4.0, 5.0], [-1.0, -5.0, 2.0]])
         coords = torch.stack((coords_b0, coords_b1))
 
-        mask = torch.tensor([
-            [1, 1, 1, 1],
-            [1, 1, 0, 0]
-        ])
+        mask = torch.tensor([[1, 1, 1, 1], [1, 1, 0, 0]])
 
         exp_shape = (2, num_nodes, num_nodes)
         exp_type = torch.long
 
-        exp_adj_b0 = [
-            [0, 1, 1, 0],
-            [1, 0, 1, 0],
-            [1, 1, 0, 0],
-            [1, 1, 0, 0]
-        ]
-        exp_adj_b1 = [
-            [0, 1, 0, 0],
-            [1, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0]
-        ]
+        exp_adj_b0 = [[0, 1, 1, 0], [1, 0, 1, 0], [1, 1, 0, 0], [1, 1, 0, 0]]
+        exp_adj_b1 = [[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
 
         adjacency = smolF.edges_from_nodes(coords, k=2, node_mask=mask)
 
@@ -278,75 +196,53 @@ class EdgeFnsTests(unittest.TestCase):
 
 class SparseFnsTests(unittest.TestCase):
     def test_gather_edge_features(self):
-        feats_b0 = torch.tensor([
-            [[0.5, 1.0], [0.1, -0.5], [5.0, -2.0], [-0.1, 0.8]],
-            [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]],
-            [[9.0, 10.0], [11.0, 12.0], [13.0, 14.0], [15.0, 16.0]],
-            [[0.6, -0.2], [0.5, -2.0], [-7.0, 4.0], [5.0, 6.0]]
-        ])
-        feats_b1 = torch.tensor([
-            [[0.1, 0.2], [0.3, 0.4], [0.5, 0.6], [0.7, 0.8]],
-            [[-1.0, -2.0], [-2.0, -3.0], [-3.0, -4.0], [-4.0, -5.0]],
-            [[0.6, 0.9], [0.3, 0.2], [0.1, -0.7], [-0.5, 0.9]],
-            [[1.5, -2.8], [6.3, 2.9], [5.8, 9.1], [0.4, -3.7]]
-        ])
+        feats_b0 = torch.tensor(
+            [
+                [[0.5, 1.0], [0.1, -0.5], [5.0, -2.0], [-0.1, 0.8]],
+                [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]],
+                [[9.0, 10.0], [11.0, 12.0], [13.0, 14.0], [15.0, 16.0]],
+                [[0.6, -0.2], [0.5, -2.0], [-7.0, 4.0], [5.0, 6.0]],
+            ]
+        )
+        feats_b1 = torch.tensor(
+            [
+                [[0.1, 0.2], [0.3, 0.4], [0.5, 0.6], [0.7, 0.8]],
+                [[-1.0, -2.0], [-2.0, -3.0], [-3.0, -4.0], [-4.0, -5.0]],
+                [[0.6, 0.9], [0.3, 0.2], [0.1, -0.7], [-0.5, 0.9]],
+                [[1.5, -2.8], [6.3, 2.9], [5.8, 9.1], [0.4, -3.7]],
+            ]
+        )
         feats = torch.stack((feats_b0, feats_b1))
 
-        adj_1 = torch.tensor([
+        adj_1 = torch.tensor(
             [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 1, 0],
-                [0, 0, 0, 1]
-            ],
-            [
-                [0, 0, 0, 1],
-                [0, 0, 0, 1],
-                [0, 0, 0, 1],
-                [0, 0, 0, 1]
+                [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+                [[0, 0, 0, 1], [0, 0, 0, 1], [0, 0, 0, 1], [0, 0, 0, 1]],
             ]
-        ]).long()
+        ).long()
 
-        adj_2 = torch.tensor([
+        adj_2 = torch.tensor(
             [
-                [0, 1, 1, 0],
-                [1, 0, 0, 1],
-                [0, 1, 0, 1],
-                [1, 1, 0, 0]
-            ],
-            [
-                [0, 1, 0, 1],
-                [1, 0, 1, 0],
-                [1, 1, 0, 0],
-                [0, 1, 1, 0]
+                [[0, 1, 1, 0], [1, 0, 0, 1], [0, 1, 0, 1], [1, 1, 0, 0]],
+                [[0, 1, 0, 1], [1, 0, 1, 0], [1, 1, 0, 0], [0, 1, 1, 0]],
             ]
-        ]).long()
+        ).long()
 
-        exp_feats_1_b0 = [
-            [[0.5, 1.0]],
-            [[3.0, 4.0]],
-            [[13.0, 14.0]],
-            [[5.0, 6.0]]
-        ]
-        exp_feats_1_b1 = [
-            [[0.7, 0.8]],
-            [[-4.0, -5.0]],
-            [[-0.5, 0.9]],
-            [[0.4, -3.7]]
-        ]
+        exp_feats_1_b0 = [[[0.5, 1.0]], [[3.0, 4.0]], [[13.0, 14.0]], [[5.0, 6.0]]]
+        exp_feats_1_b1 = [[[0.7, 0.8]], [[-4.0, -5.0]], [[-0.5, 0.9]], [[0.4, -3.7]]]
         exp_feats_1 = [exp_feats_1_b0, exp_feats_1_b1]
 
         exp_feats_2_b0 = [
             [[0.1, -0.5], [5.0, -2.0]],
             [[1.0, 2.0], [7.0, 8.0]],
             [[11.0, 12.0], [15.0, 16.0]],
-            [[0.6, -0.2], [0.5, -2.0]]
+            [[0.6, -0.2], [0.5, -2.0]],
         ]
         exp_feats_2_b1 = [
             [[0.3, 0.4], [0.7, 0.8]],
             [[-1.0, -2.0], [-3.0, -4.0]],
             [[0.6, 0.9], [0.3, 0.2]],
-            [[6.3, 2.9], [5.8, 9.1]]
+            [[6.3, 2.9], [5.8, 9.1]],
         ]
         exp_feats_2 = [exp_feats_2_b0, exp_feats_2_b1]
 
@@ -361,34 +257,19 @@ class GeometryFnsTests(unittest.TestCase):
     def test_calc_distance_without_edges(self):
         num_nodes = 4
 
-        coords_b0 = torch.tensor([
-            [1.0, 1.0, 1.0],
-            [1.0, 1.0, 1.0],
-            [-1.0, 0.0, 1.0],
-            [5.0, -1.0, -2.0]
-        ])
-        coords_b1 = torch.tensor([
-            [0.5, 1.0, -0.25],
-            [1.0, 1.0, 1.0],
-            [0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0]
-        ])
+        coords_b0 = torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [-1.0, 0.0, 1.0], [5.0, -1.0, -2.0]])
+        coords_b1 = torch.tensor([[0.5, 1.0, -0.25], [1.0, 1.0, 1.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
         coords = torch.stack((coords_b0, coords_b1))
 
         exp_shape = (2, num_nodes, num_nodes)
         exp_type = torch.float
 
-        exp_b0 = [
-            [0.0, 0.0, 5.0, 29.0],
-            [0.0, 0.0, 5.0, 29.0],
-            [5.0, 5.0, 0.0, 46.0],
-            [29.0, 29.0, 46.0, 0.0]
-        ]
+        exp_b0 = [[0.0, 0.0, 5.0, 29.0], [0.0, 0.0, 5.0, 29.0], [5.0, 5.0, 0.0, 46.0], [29.0, 29.0, 46.0, 0.0]]
         exp_b1 = [
             [0.0, 1.8125, 1.3125, 1.3125],
             [1.8125, 0.0, 3.0, 3.0],
             [1.3125, 3.0, 0.0, 0.0],
-            [1.3125, 3.0, 0.0, 0.0]
+            [1.3125, 3.0, 0.0, 0.0],
         ]
 
         sqrd_dists = smolF.calc_distances(coords, sqrd=True)
@@ -406,28 +287,12 @@ class GeometryFnsTests(unittest.TestCase):
     def test_calc_distances_from_edges(self):
         num_edges = 8
 
-        coords_b0 = torch.tensor([
-            [1.0, 1.0, 1.0],
-            [1.0, 1.0, 1.0],
-            [-1.0, 0.0, 1.0],
-            [5.0, -1.0, -2.0]
-        ])
-        coords_b1 = torch.tensor([
-            [0.5, 1.0, -0.25],
-            [1.0, 1.0, 1.0],
-            [0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0]
-        ])
+        coords_b0 = torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [-1.0, 0.0, 1.0], [5.0, -1.0, -2.0]])
+        coords_b1 = torch.tensor([[0.5, 1.0, -0.25], [1.0, 1.0, 1.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
         coords = torch.stack((coords_b0, coords_b1))
 
-        edge_is = torch.tensor([
-            [0, 0, 0, 0, 1, 2, 2, 2],
-            [0, 0, 0, 1, 1, 0, 0, 0]
-        ])
-        edge_js = torch.tensor([
-            [0, 1, 2, 3, 0, 2, 0, 0],
-            [0, 1, 2, 2, 2, 0, 0, 0]
-        ])
+        edge_is = torch.tensor([[0, 0, 0, 0, 1, 2, 2, 2], [0, 0, 0, 1, 1, 0, 0, 0]])
+        edge_js = torch.tensor([[0, 1, 2, 3, 0, 2, 0, 0], [0, 1, 2, 2, 2, 0, 0, 0]])
         edges = (edge_is, edge_js)
 
         exp_shape = (2, num_edges)
@@ -449,24 +314,9 @@ class GeometryFnsTests(unittest.TestCase):
         np.testing.assert_almost_equal(np.sqrt(exp_b1).tolist(), dists[1].tolist(), decimal=5)
 
     def test_calc_com_correct_centre(self):
-        coords_b0 = torch.tensor([
-            [1.0, 1.0, 1.0],
-            [2.0, -2.0, 0.0],
-            [-4.0, 2.0, 2.0],
-            [3.0, -5.0, -5.0]
-        ])
-        coords_b1 = torch.tensor([
-            [1.0, 1.0, 1.0],
-            [2.0, -2.0, 0.0],
-            [-4.0, 2.0, 1.0],
-            [3.0, -5.0, -5.0]
-        ])
-        coords_b2 = torch.tensor([
-            [1.0, 1.0, 1.0],
-            [2.0, -2.0, 0.0],
-            [-4.0, 2.0, 1.0],
-            [3.0, -5.0, -5.0]
-        ])
+        coords_b0 = torch.tensor([[1.0, 1.0, 1.0], [2.0, -2.0, 0.0], [-4.0, 2.0, 2.0], [3.0, -5.0, -5.0]])
+        coords_b1 = torch.tensor([[1.0, 1.0, 1.0], [2.0, -2.0, 0.0], [-4.0, 2.0, 1.0], [3.0, -5.0, -5.0]])
+        coords_b2 = torch.tensor([[1.0, 1.0, 1.0], [2.0, -2.0, 0.0], [-4.0, 2.0, 1.0], [3.0, -5.0, -5.0]])
         coords = torch.stack((coords_b0, coords_b1, coords_b2))
         mask = torch.tensor([[1, 1, 1, 1], [1, 1, 0, 0], [0, 0, 0, 0]])
 
@@ -487,13 +337,7 @@ class GeometryFnsTests(unittest.TestCase):
         np.testing.assert_equal(exp_com_b2, com[2, 0, :].tolist())
 
     def test_rotate_rotates_all_coords_correctly(self):
-        coords = torch.tensor([
-            [0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 1.0],
-            [-1.0, 2.0, 0.5]
-        ])
+        coords = torch.tensor([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [-1.0, 2.0, 0.5]])
 
         rot1 = [np.pi / 2, 0.0, 0.0]
         rot2 = [0.0, np.pi / 2, 0.0]
@@ -501,41 +345,11 @@ class GeometryFnsTests(unittest.TestCase):
         rot4 = [np.pi / 2, np.pi, np.pi / 2]
         rot5 = [-np.pi / 2, 0.0, 2 * np.pi]
 
-        exp_coords_1 = [
-            [0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0],
-            [0.0, -1.0, 0.0],
-            [-1.0, -0.5, 2.0]
-        ]
-        exp_coords_2 = [
-            [0.0, 0.0, 0.0],
-            [0.0, 0.0, -1.0],
-            [0.0, 1.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [0.5, 2.0, 1.0]
-        ]
-        exp_coords_3 = [
-            [0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [-1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0],
-            [-2.0, -1.0, 0.5]
-        ]
-        exp_coords_4 = [
-            [0.0, 0.0, 0.0],
-            [0.0, -1.0, 0.0],
-            [0.0, 0.0, -1.0],
-            [1.0, 0.0, 0.0],
-            [0.5, 1.0, -2.0]
-        ]
-        exp_coords_5 = [
-            [0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [0.0, 0.0, -1.0],
-            [0.0, 1.0, 0.0],
-            [-1.0, 0.5, -2.0]
-        ]
+        exp_coords_1 = [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, -1.0, 0.0], [-1.0, -0.5, 2.0]]
+        exp_coords_2 = [[0.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0], [0.5, 2.0, 1.0]]
+        exp_coords_3 = [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [-2.0, -1.0, 0.5]]
+        exp_coords_4 = [[0.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 0.0, -1.0], [1.0, 0.0, 0.0], [0.5, 1.0, -2.0]]
+        exp_coords_5 = [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0], [-1.0, 0.5, -2.0]]
 
         rotated_1 = smolF.rotate(coords, rot1)
         rotated_2 = smolF.rotate(coords, rot2)

@@ -1,21 +1,20 @@
-from typing import Optional
-from functools import partial
-
-import torch
-import numpy as np
-import lightning as L
-import torch.nn.functional as F
-from torchmetrics import MetricCollection
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
+from typing import Optional
+
+import lightning as L
+import numpy as np
+import torch
+import torch.nn.functional as F
 from torch.optim.lr_scheduler import LinearLR, OneCycleLR
+from torchmetrics import MetricCollection
 
-import semlaflow.util.rdkit as smolRD
-import semlaflow.util.metrics as Metrics
 import semlaflow.util.functional as smolF
-from semlaflow.util.tokeniser import Vocabulary
-from semlaflow.util.molrepr import GeometricMol
+import semlaflow.util.metrics as Metrics
+import semlaflow.util.rdkit as smolRD
 from semlaflow.models.semla import MolecularGenerator
-
+from semlaflow.util.molrepr import GeometricMol
+from semlaflow.util.tokeniser import Vocabulary
 
 _T = torch.Tensor
 _BatchT = dict[str, _T]
@@ -61,7 +60,7 @@ class Integrator:
         vocab_size = predicted["atomics"].size(-1)
         n_bonds = predicted["bonds"].size(-1)
 
-        # *** Coord update step *** 
+        # *** Coord update step ***
         coord_velocity = (predicted["coords"] - curr["coords"]) / (1 - t.view(-1, 1, 1))
         coord_velocity += (torch.randn_like(coord_velocity) * self.coord_noise_std)
         coords = curr["coords"] + (step_size * coord_velocity)
@@ -139,7 +138,7 @@ class Integrator:
 
         # Applying unmasking and re-masking
         curr[unmask] = pred[unmask]
-        curr[mask] = mask_index 
+        curr[mask] = mask_index
 
         return smolF.one_hot_encode_tensor(curr, n_categories)
 
@@ -388,13 +387,14 @@ class MolecularCFM(L.LightningModule):
         super().__init__()
 
         if type_strategy not in ["mse", "ce", "mask"]:
-            raise ValueError(f"Unsupported type training strategy '{type_strategy}'")
+            raise ValueError(f"Unsupported type training strategy '{type_strategy}'. "
+                             + "Supported are `mse`, `ce` or `mask`.")
 
         if bond_strategy not in ["ce", "mask"]:
-            raise ValueError(f"Unsupported bond training strategy '{bond_strategy}'")
+            raise ValueError(f"Unsupported bond training strategy '{bond_strategy}'. Supported are `ce` or `mask`.")
 
         if lr_schedule not in ["constant", "one-cycle"]:
-            raise ValueError(f"LR scheduler {lr_schedule} not supported.")
+            raise ValueError(f"LR scheduler {lr_schedule} not supported. Supported are `constant` or `one-cycle`.")
 
         if lr_schedule == "one-cycle" and total_steps is None:
             raise ValueError("total_steps must be provided when using the one-cycle LR scheduler.")
@@ -402,7 +402,8 @@ class MolecularCFM(L.LightningModule):
         if distill and (type_strategy == "mask" or bond_strategy == "mask"):
             raise ValueError("Distilled training with masking strategy is not supported.")
 
-        # Note that warm_up_steps is currently ignored if schedule is one-cycle
+        if lr_schedule == "one-cycle" and warm_up_steps is not None:
+            print("Note: warm_up_steps is currently ignored if schedule is one-cycle")
 
         self.gen = gen
         self.vocab = vocab
@@ -667,7 +668,7 @@ class MolecularCFM(L.LightningModule):
             scheduler = OneCycleLR(opt, max_lr=self.lr, total_steps=self.total_steps, pct_start=0.3)
 
         else:
-            raise ValueError(f"LR schedule {self.lr_schedule} is not supported.")
+            raise ValueError("Only `constant` or `one-cycle` LR schedules are supported.")
 
         config = {
             "optimizer": opt,

@@ -1,12 +1,13 @@
-import torch
-import numpy as np
-from pathlib import Path
 from abc import ABC, abstractmethod
+from pathlib import Path
+
+import numpy as np
+import torch
 
 from semlaflow.util.molrepr import GeometricMolBatch
 
-
 # *** Util functions ***
+
 
 def load_smol_data(data_path, smol_cls):
     data_path = Path(data_path)
@@ -22,6 +23,7 @@ def load_smol_data(data_path, smol_cls):
 
 
 # *** Abstract class for all Smol data types ***
+
 
 class SmolDataset(ABC, torch.utils.data.Dataset):
     def __init__(self, smol_data, transform=None):
@@ -56,6 +58,7 @@ class SmolDataset(ABC, torch.utils.data.Dataset):
 
 # *** SmolDataset implementations ***
 
+
 class GeometricDataset(SmolDataset):
     def sample(self, n_items, replacement=False):
         mol_samples = np.random.choice(self._data.to_list(), n_items, replace=replacement)
@@ -74,6 +77,7 @@ class GeometricDataset(SmolDataset):
 
 # *** Other useful datasets ***
 
+
 class SmolPairDataset(torch.utils.data.Dataset):
     """A dataset which returns pairs of SmolMol objects"""
 
@@ -81,10 +85,10 @@ class SmolPairDataset(torch.utils.data.Dataset):
         super().__init__()
 
         if len(from_dataset) != len(to_dataset):
-            raise ValueError(f"From and to datasets must have the same number of items.")
+            raise ValueError("From and to datasets must have the same number of items.")
 
         if from_dataset.lengths != to_dataset.lengths:
-            raise ValueError(f"From and to datasets must have molecules of the same length at each index.")
+            raise ValueError("From and to datasets must have molecules of the same length at each index.")
 
         self.from_dataset = from_dataset
         self.to_dataset = to_dataset
@@ -92,10 +96,7 @@ class SmolPairDataset(torch.utils.data.Dataset):
     # TODO stop hparams clashing from different sources
     @property
     def hparams(self):
-        return {
-            **self.from_dataset.hparams,
-            **self.to_dataset.hparams
-        }
+        return {**self.from_dataset.hparams, **self.to_dataset.hparams}
 
     @property
     def lengths(self):

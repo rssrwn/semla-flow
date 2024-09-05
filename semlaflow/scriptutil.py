@@ -4,19 +4,18 @@ import math
 import resource
 from pathlib import Path
 
-import torch
 import numpy as np
-from tqdm import tqdm
-from rdkit import RDLogger
+import torch
 from openbabel import pybel
+from rdkit import RDLogger
 from torchmetrics import MetricCollection
+from tqdm import tqdm
 
-import semlaflow.util.rdkit as smolRD
 import semlaflow.util.functional as smolF
 import semlaflow.util.metrics as Metrics
-from semlaflow.util.tokeniser import Vocabulary
+import semlaflow.util.rdkit as smolRD
 from semlaflow.data.datasets import GeometricDataset
-
+from semlaflow.util.tokeniser import Vocabulary
 
 # Declarations to be used in scripts
 QM9_COORDS_STD_DEV = 1.723299503326416
@@ -32,7 +31,7 @@ COMPILER_CACHE_SIZE = 128
 
 def disable_lib_stdout():
     pybel.ob.obErrorLog.StopLogging()
-    RDLogger.DisableLog('rdApp.*')
+    RDLogger.DisableLog("rdApp.*")
 
 
 # Need to ensure the limits are large enough when using OT since lots of preprocessing needs to be done on the batches
@@ -54,10 +53,11 @@ def configure_fs(limit=4096):
             resource.setrlimit(n_file_resource, (limit, hard_limit))
             print("Limit changed successfully!")
 
-        except:
+        except Exception:
             print("Limit change unsuccessful. Using torch file_system file sharing strategy instead.")
 
             import torch.multiprocessing
+
             torch.multiprocessing.set_sharing_strategy("file_system")
 
     else:
@@ -143,12 +143,9 @@ def init_metrics(data_path, model):
         "energy-per-atom": Metrics.AverageEnergy(per_atom=True),
         "strain": Metrics.AverageStrainEnergy(),
         "strain-per-atom": Metrics.AverageStrainEnergy(per_atom=True),
-        "opt-rmsd": Metrics.AverageOptRmsd()
+        "opt-rmsd": Metrics.AverageOptRmsd(),
     }
-    stability_metrics = {
-        "atom-stability": Metrics.AtomStability(),
-        "molecule-stability": Metrics.MoleculeStability()
-    }
+    stability_metrics = {"atom-stability": Metrics.AtomStability(), "molecule-stability": Metrics.MoleculeStability()}
 
     metrics = MetricCollection(metrics, compute_groups=False)
     stability_metrics = MetricCollection(stability_metrics, compute_groups=False)
@@ -190,10 +187,7 @@ def calc_metrics_(rdkit_mols, metrics, stab_metrics=None, mol_stabs=None):
     stab_metrics.update(mol_stabs)
     stab_results = stab_metrics.compute()
 
-    results = {
-        **results,
-        **stab_results
-    }
+    results = {**results, **stab_results}
     return results
 
 

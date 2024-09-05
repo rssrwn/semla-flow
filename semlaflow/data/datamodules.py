@@ -1,12 +1,12 @@
 import os
 from functools import partial
 
-import torch
 import lightning as L
+import torch
 from torch.utils.data import DataLoader
 
-import semlaflow.util.rdkit as smolRD
 import semlaflow.util.functional as smolF
+import semlaflow.util.rdkit as smolRD
 from semlaflow.data.util import BucketBatchSampler
 from semlaflow.util.molrepr import GeometricMol, GeometricMolBatch
 
@@ -20,7 +20,7 @@ class SmolDM(L.LightningDataModule):
         batch_cost,
         bucket_limits=None,
         bucket_cost_scale="constant",
-        pad_to_bucket=False
+        pad_to_bucket=False,
     ):
         super().__init__()
 
@@ -67,7 +67,7 @@ class SmolDM(L.LightningDataModule):
             "bucket-cost-scale": self.bucket_cost_scale,
             **train_hps,
             **val_hps,
-            **test_hps
+            **test_hps,
         }
         return hparams
 
@@ -83,7 +83,7 @@ class SmolDM(L.LightningDataModule):
             batch_sampler=sampler,
             num_workers=self._num_workers,
             pin_memory=True,
-            collate_fn=partial(self._collate, dataset="train")
+            collate_fn=partial(self._collate, dataset="train"),
         )
         return dataloader
 
@@ -97,7 +97,7 @@ class SmolDM(L.LightningDataModule):
             shuffle=False,
             batch_sampler=sampler,
             num_workers=self._num_workers,
-            collate_fn=partial(self._collate, dataset="val")
+            collate_fn=partial(self._collate, dataset="val"),
         )
         return dataloader
 
@@ -111,7 +111,7 @@ class SmolDM(L.LightningDataModule):
             shuffle=False,
             batch_sampler=sampler,
             num_workers=self._num_workers,
-            collate_fn=partial(self._collate, dataset="test")
+            collate_fn=partial(self._collate, dataset="test"),
         )
         return dataloader
 
@@ -125,7 +125,7 @@ class SmolDM(L.LightningDataModule):
                 self.batch_cost,
                 bucket_costs=costs,
                 drop_last=drop_last,
-                round_batch_to_8=True
+                round_batch_to_8=True,
             )
 
         return sampler
@@ -140,7 +140,7 @@ class SmolDM(L.LightningDataModule):
         elif self.bucket_cost_scale == "quadratic":
             # Divide by 256 and add one to approximate the linear and constant overheads
             # A molecule with 16 atoms will therefore have a cost of 1 + 1
-            return [((limit ** 2) / 256) + 1 for limit in self.bucket_limits]
+            return [((limit**2) / 256) + 1 for limit in self.bucket_limits]
         else:
             raise ValueError(f"Unknown value for bucket_cost_scale '{self.bucket_cost_scale}'")
 
@@ -186,7 +186,7 @@ class GeometricDM(SmolDM):
 
     def _batch_to_dict(self, smol_batch):
         # Pad batch to n_atoms using a fake mol
-        # If we are not padding to bucket size get_padded_size will just return largest mol size 
+        # If we are not padding to bucket size get_padded_size will just return largest mol size
         n_atoms = self._get_padded_size(smol_batch)
         batch = [self._fake_mol_like(smol_batch[0], n_atoms)] + smol_batch.to_list()
         batch = GeometricMolBatch.from_list(batch)
@@ -202,13 +202,7 @@ class GeometricDM(SmolDM):
             n_charges = len(smolRD.CHARGE_IDX_MAP.keys())
             charges = smolF.one_hot_encode_tensor(charges, n_charges)
 
-        data = {
-            "coords": coords,
-            "atomics": atomics,
-            "bonds": bonds,
-            "charges": charges,
-            "mask": mask
-        }
+        data = {"coords": coords, "atomics": atomics, "bonds": bonds, "charges": charges, "mask": mask}
         return data
 
     def _get_padded_size(self, smol_batch):
@@ -251,7 +245,7 @@ class GeometricInterpolantDM(GeometricDM):
         test_interpolant=None,
         bucket_limits=None,
         bucket_cost_scale=None,
-        pad_to_bucket=False
+        pad_to_bucket=False,
     ):
 
         self.train_interpolant = train_interpolant
@@ -265,7 +259,7 @@ class GeometricInterpolantDM(GeometricDM):
             batch_size,
             bucket_limits=bucket_limits,
             bucket_cost_scale=bucket_cost_scale,
-            pad_to_bucket=pad_to_bucket
+            pad_to_bucket=pad_to_bucket,
         )
 
     @property
@@ -280,10 +274,7 @@ class GeometricInterpolantDM(GeometricDM):
                 hparams.append(interp_hparams)
 
         hparams = {k: v for interp_hparams in hparams for k, v in interp_hparams.items()}
-        return {
-            **hparams,
-            **super().hparams
-        }
+        return {**hparams, **super().hparams}
 
     def _collate(self, batch, dataset):
         if dataset == "train" and self.train_interpolant is not None:

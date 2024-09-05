@@ -2,11 +2,10 @@ import threading
 from typing import Optional, Union
 
 import numpy as np
+from openbabel import pybel
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from openbabel import pybel
 from scipy.spatial.transform import Rotation
-
 
 ArrT = np.ndarray
 
@@ -45,7 +44,7 @@ class PeriodicTable:
             token = self._table.GetElementSymbol(atomic_num)
 
         return token
-    
+
     def valence(self, atom: Union[str, int]) -> int:
         with self._pt_lock:
             valence = self._table.GetDefaultValence(atom)
@@ -60,23 +59,10 @@ class PeriodicTable:
 
 PT = PeriodicTable()
 
-IDX_BOND_MAP = {
-    1: Chem.BondType.SINGLE,
-    2: Chem.BondType.DOUBLE,
-    3: Chem.BondType.TRIPLE,
-    4: Chem.BondType.AROMATIC
-}
+IDX_BOND_MAP = {1: Chem.BondType.SINGLE, 2: Chem.BondType.DOUBLE, 3: Chem.BondType.TRIPLE, 4: Chem.BondType.AROMATIC}
 BOND_IDX_MAP = {bond: idx for idx, bond in IDX_BOND_MAP.items()}
 
-IDX_CHARGE_MAP = {
-    0: 0,
-    1: 1,
-    2: 2,
-    3: 3,
-    4: -1,
-    5: -2,
-    6: -3
-}
+IDX_CHARGE_MAP = {0: 0, 1: 1, 2: 2, 3: 3, 4: -1, 5: -2, 6: -3}
 CHARGE_IDX_MAP = {charge: idx for idx, charge in IDX_CHARGE_MAP.items()}
 
 
@@ -86,10 +72,11 @@ CHARGE_IDX_MAP = {charge: idx for idx, charge in IDX_CHARGE_MAP.items()}
 
 # TODO merge these with check functions in other files
 
+
 def _check_shape_len(arr, allowed, name="object"):
     num_dims = len(arr.shape)
     allowed = [allowed] if isinstance(allowed, int) else allowed
-    if num_dims not in allowed: 
+    if num_dims not in allowed:
         raise RuntimeError(f"Number of dimensions of {name} must be in {str(allowed)}, got {num_dims}")
 
 
@@ -100,7 +87,6 @@ def _check_dim_shape(arr, dim, allowed, name="object"):
         raise RuntimeError(f"Shape of {name} for dim {dim} must be in {allowed}, got {shape}")
 
 
-
 # *************************************************************************************************
 # ************************************* External Functions ****************************************
 # *************************************************************************************************
@@ -108,7 +94,7 @@ def _check_dim_shape(arr, dim, allowed, name="object"):
 
 def mol_is_valid(mol: Chem.rdchem.Mol, with_hs: bool = True, connected: bool = True) -> bool:
     """Whether the mol can be sanitised and, optionally, whether it's fully connected
-    
+
     Args:
         mol (Chem.Mol): RDKit molecule to check
         with_hs (bool): Whether to check validity including hydrogens (if they are in the input mol), default True
@@ -127,7 +113,7 @@ def mol_is_valid(mol: Chem.rdchem.Mol, with_hs: bool = True, connected: bool = T
 
     try:
         AllChem.SanitizeMol(mol_copy)
-    except:
+    except Exception:
         return False
 
     n_frags = len(AllChem.GetMolFrags(mol_copy))
@@ -158,7 +144,7 @@ def calc_energy(mol: Chem.rdchem.Mol, per_atom: bool = False) -> float:
         ff = AllChem.MMFFGetMoleculeForceField(mol_copy, mmff_props, confId=0)
         energy = ff.CalcEnergy()
         energy = energy / mol.GetNumAtoms() if per_atom else energy
-    except:
+    except Exception:
         energy = None
 
     return energy
@@ -167,7 +153,7 @@ def calc_energy(mol: Chem.rdchem.Mol, per_atom: bool = False) -> float:
 def optimise_mol(mol: Chem.rdchem.Mol, max_iters: int = 1000) -> Chem.rdchem.Mol:
     """Optimise the conformation of an RDKit molecule
 
-    Only the first (0th index) conformer within the molecule is optimised. The molecule is copied so the original 
+    Only the first (0th index) conformer within the molecule is optimised. The molecule is copied so the original
     is not modified.
 
     Args:
@@ -181,14 +167,11 @@ def optimise_mol(mol: Chem.rdchem.Mol, max_iters: int = 1000) -> Chem.rdchem.Mol
 
     mol_copy = Chem.Mol(mol)
     try:
-        exitcode = AllChem.MMFFOptimizeMolecule(mol_copy, maxIters=max_iters)
-    except:
-        exitcode = -1
+        AllChem.MMFFOptimizeMolecule(mol_copy, maxIters=max_iters)
+    except Exception:
+        return None
 
-    if exitcode == 0:
-        return mol_copy
-
-    return None
+    return mol_copy
 
 
 def conf_distance(mol1: Chem.rdchem.Mol, mol2: Chem.rdchem.Mol, fix_order: bool = True) -> float:
@@ -233,7 +216,7 @@ def smiles_from_mol(mol: Chem.rdchem.Mol, canonical: bool = True, explicit_hs: b
     Args:
         mol (Chem.Mol): RDKit molecule object
         canonical (bool): Whether to create a canonical SMILES, default True
-        explicit_hs (bool): Whether to embed hydrogens in the mol before creating a SMILES, default False. If True 
+        explicit_hs (bool): Whether to embed hydrogens in the mol before creating a SMILES, default False. If True
                 this will create a new mol with all hydrogens embedded. Note that the SMILES created by doing this
                 is not necessarily the same as creating a SMILES showing implicit hydrogens.
 
@@ -243,13 +226,13 @@ def smiles_from_mol(mol: Chem.rdchem.Mol, canonical: bool = True, explicit_hs: b
 
     if mol is None:
         return None
-    
+
     if explicit_hs:
         mol = Chem.AddHs(mol)
 
     try:
         smiles = Chem.MolToSmiles(mol, canonical=canonical)
-    except:
+    except Exception:
         smiles = None
 
     return smiles
@@ -272,18 +255,14 @@ def mol_from_smiles(smiles: str, explicit_hs: bool = False) -> Union[Chem.rdchem
     try:
         mol = Chem.MolFromSmiles(smiles)
         mol = Chem.AddHs(mol) if explicit_hs else mol
-    except:
+    except Exception:
         mol = None
 
     return mol
 
 
 def mol_from_atoms(
-    coords: ArrT,
-    tokens: list[str],
-    bonds: Optional[ArrT] = None,
-    charges: Optional[ArrT] = None,
-    sanitise=True
+    coords: ArrT, tokens: list[str], bonds: Optional[ArrT] = None, charges: Optional[ArrT] = None, sanitise=True
 ):
     """Create RDKit mol from atom coords and atom tokens (and optionally bonds)
 
@@ -324,7 +303,7 @@ def mol_from_atoms(
 
     try:
         atomics = [PT.atomic_from_symbol(token) for token in tokens]
-    except:
+    except Exception:
         return None
 
     charges = charges.tolist() if charges is not None else [0] * len(tokens)
@@ -364,13 +343,13 @@ def mol_from_atoms(
         mol = mol.GetMol()
         for atom in mol.GetAtoms():
             atom.UpdatePropertyCache(strict=False)
-    except:
+    except Exception:
         return None
 
     if sanitise:
         try:
             Chem.SanitizeMol(mol)
-        except:
+        except Exception:
             return None
 
     return mol
@@ -387,7 +366,7 @@ def _infer_bonds(mol: Chem.rdchem.Mol):
 
     try:
         pybel_mol = pybel.readstring("xyz", xyz_str)
-    except:
+    except Exception:
         pybel_mol = None
 
     if pybel_mol is None:
