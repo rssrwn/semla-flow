@@ -160,7 +160,7 @@ def build_dm(args, hparams, vocab):
         coord_noise="gaussian",
         type_noise=hparams["val-prior-type-noise"],
         bond_noise=hparams["val-prior-bond-noise"],
-        scale_ot=False,
+        scale_ot=hparams["val-prior-noise-scale-ot"],
         zero_com=True,
         type_mask_index=type_mask_index,
         bond_mask_index=bond_mask_index
