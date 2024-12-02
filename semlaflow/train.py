@@ -1,20 +1,21 @@
 import argparse
-from pathlib import Path
 from functools import partial
+from pathlib import Path
 
-import torch
 import lightning as L
+import torch
+from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
-from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
 
 import semlaflow.scriptutil as util
-from semlaflow.models.fm import MolecularCFM, Integrator
-from semlaflow.models.semla import SemlaGenerator, EquiInvDynamics
-
-from semlaflow.data.datasets import GeometricDataset
 from semlaflow.data.datamodules import GeometricInterpolantDM
+from semlaflow.data.datasets import GeometricDataset
 from semlaflow.data.interpolate import GeometricInterpolant, GeometricNoiseSampler
+from semlaflow.models.fm import Integrator, MolecularCFM
+from semlaflow.models.semla import EquiInvDynamics, SemlaGenerator
 
+DEFAULT_DATASET = "geom-drugs"
+DEFAULT_ARCH = "semla"
 
 DEFAULT_D_MODEL = 384
 DEFAULT_N_LAYERS = 12
@@ -42,6 +43,7 @@ DEFAULT_WARM_UP_STEPS = 10000
 DEFAULT_BUCKET_COST_SCALE = "linear"
 
 DEFAULT_N_VALIDATION_MOLS = 2000
+DEFAULT_VAL_CHECK_EPOCHS = 10
 DEFAULT_NUM_INFERENCE_STEPS = 100
 DEFAULT_CAT_SAMPLING_NOISE_LEVEL = 1
 DEFAULT_COORD_NOISE_STD_DEV = 0.2
@@ -51,21 +53,15 @@ DEFAULT_TIME_BETA = 1.0
 DEFAULT_OPTIMAL_TRANSPORT = "equivariant"
 
 
-# bfloat16 training produced significantly worse models than full so use default 16-bit instead
-def get_precision(args):
-    return "32"
-    # return "16-mixed" if args.mixed_precision else "32"
-
-
 def build_model(args, dm, vocab):
     # Get hyperparameeters from the datamodule, pass these into the model to be saved
     hparams = {
         "epochs": args.epochs,
         "gradient_clip_val": args.gradient_clip_val,
         "dataset": args.dataset,
-        "precision": get_precision(args),
+        "precision": "32",
         "architecture": args.arch,
-        **dm.hparams
+        **dm.hparams,
     }
 
     # Add 1 for the time (0 <= t <= 1 for flow matching)
@@ -83,7 +79,7 @@ def build_model(args, dm, vocab):
             d_edge=args.d_edge,
             bond_refine=True,
             self_cond=args.self_condition,
-            coord_norm=args.coord_norm
+            coord_norm=args.coord_norm,
         )
         egnn_gen = SemlaGenerator(
             args.d_model,
@@ -94,7 +90,7 @@ def build_model(args, dm, vocab):
             n_edge_types=n_bond_types,
             self_cond=args.self_condition,
             size_emb=args.size_emb,
-            max_atoms=args.max_atoms
+            max_atoms=args.max_atoms,
         )
 
     elif args.arch == "eqgat":
@@ -107,29 +103,18 @@ def build_model(args, dm, vocab):
         d_edge_eqgat = 128
 
         egnn_gen = EqgatGenerator(
-            d_model_eqgat,
-            n_layers_eqgat,
-            n_equi_feats_eqgat,
-            vocab.size,
-            n_atom_feats,
-            d_edge_eqgat,
-            n_bond_types
+            d_model_eqgat, n_layers_eqgat, n_equi_feats_eqgat, vocab.size, n_atom_feats, d_edge_eqgat, n_bond_types
         )
 
     elif args.arch == "egnn":
         from semlaflow.models.egnn import VanillaEgnnGenerator
 
         egnn_gen = VanillaEgnnGenerator(
-            args.d_model,
-            args.n_layers,
-            vocab.size,
-            n_atom_feats,
-            d_edge=args.d_edge,
-            n_edge_types=n_bond_types
+            args.d_model, args.n_layers, vocab.size, n_atom_feats, d_edge=args.d_edge, n_edge_types=n_bond_types
         )
 
     else:
-        raise ValueError(f"Unknown architecture '{args.arch}'")
+        raise ValueError(f"Unknown architecture '{args.arch}'; known: `semla`, `eqgat` or `egnn`")
 
     if args.dataset == "qm9":
         coord_scale = util.QM9_COORDS_STD_DEV
@@ -156,7 +141,10 @@ def build_model(args, dm, vocab):
         sampling_strategy = "dirichlet"
 
     else:
-        raise ValueError(f"Interpolation '{args.categorical_strategy}' is not supported.")
+        raise ValueError(
+            f"Interpolation '{args.categorical_strategy}' is not supported. "
+            + "Supported are: `mask`, `uniform-sample` and `dirichlet`"
+        )
 
     train_steps = util.calc_train_steps(dm, args.epochs, args.acc_batches)
     train_smiles = None if args.trial_run else [mols.str_id for mols in dm.train_dataset]
@@ -169,7 +157,7 @@ def build_model(args, dm, vocab):
         bond_strategy=sampling_strategy,
         cat_noise_level=args.cat_sampling_noise_level,
         type_mask_index=type_mask_index,
-        bond_mask_index=bond_mask_index
+        bond_mask_index=bond_mask_index,
     )
 
     fm_model = MolecularCFM(
@@ -194,7 +182,7 @@ def build_model(args, dm, vocab):
         train_smiles=train_smiles,
         type_mask_index=type_mask_index,
         bond_mask_index=bond_mask_index,
-        **hparams
+        **hparams,
     )
     return fm_model
 
@@ -209,7 +197,7 @@ def build_dm(args, vocab):
         padded_sizes = util.GEOM_DRUGS_BUCKET_LIMITS
 
     else:
-        raise ValueError(f"Unknown dataset {args.dataset}")
+        raise ValueError(f"Unknown dataset {args.dataset}. Available datasets are `qm9` and `geom-drugs`.")
 
     data_path = Path(args.data_path)
 
@@ -245,7 +233,10 @@ def build_dm(args, vocab):
         categorical_noise = "uniform-dist"
 
     else:
-        raise ValueError(f"Interpolation '{args.categorical_strategy}' is not supported.")
+        raise ValueError(
+            f"Interpolation '{args.categorical_strategy}' is not supported. "
+            + "Supported are: `mask`, `uniform-sample` and `dirichlet`"
+        )
 
     scale_ot = False
     batch_ot = False
@@ -259,7 +250,10 @@ def build_dm(args, vocab):
         scale_ot = True
         equivariant_ot = True
     elif args.optimal_transport not in ["None", "none", None]:
-        raise ValueError(f"Unknown value for optimal_transport '{args.optimal_transport}'")
+        raise ValueError(
+            f"Unknown value for optimal_transport '{args.optimal_transport}'. "
+            + "Acceted values: `batch`, `equivariant` and `scale`."
+        )
 
     # train_fixed_time = 0.5 if args.distill else None
     train_fixed_time = None
@@ -273,7 +267,7 @@ def build_dm(args, vocab):
         scale_ot=scale_ot,
         zero_com=True,
         type_mask_index=type_mask_index,
-        bond_mask_index=bond_mask_index
+        bond_mask_index=bond_mask_index,
     )
     train_interpolant = GeometricInterpolant(
         prior_sampler,
@@ -286,7 +280,7 @@ def build_dm(args, vocab):
         batch_ot=batch_ot,
         time_alpha=args.time_alpha,
         time_beta=args.time_beta,
-        fixed_time=train_fixed_time
+        fixed_time=train_fixed_time,
     )
     eval_interpolant = GeometricInterpolant(
         prior_sampler,
@@ -295,7 +289,7 @@ def build_dm(args, vocab):
         bond_interpolation=categorical_interpolation,
         equivariant_ot=False,
         batch_ot=False,
-        fixed_time=0.9
+        fixed_time=0.9,
     )
 
     dm = GeometricInterpolantDM(
@@ -308,7 +302,7 @@ def build_dm(args, vocab):
         test_interpolant=None,
         bucket_limits=padded_sizes,
         bucket_cost_scale=args.bucket_cost_scale,
-        pad_to_bucket=False
+        pad_to_bucket=False,
     )
     return dm
 
@@ -316,30 +310,16 @@ def build_dm(args, vocab):
 def build_trainer(args):
     epochs = 1 if args.trial_run else args.epochs
     log_steps = 1 if args.trial_run else 50
-
-    if args.dataset == "qm9":
-        val_check_epochs = 10
-    elif args.dataset == "geom-drugs":
-        val_check_epochs = 10
-    else:
-        raise ValueError(f"Unknown dataset {args.dataset}")
+    val_check_epochs = 1 if args.trial_run else args.val_check_epochs
 
     project_name = f"{util.PROJECT_PREFIX}-{args.dataset}"
-    precision = get_precision(args)
-
-    print(f"Using precision '{precision}'")
+    print("Using precision '32'")
 
     logger = WandbLogger(project=project_name, save_dir="wandb", log_model=True)
     lr_monitor = LearningRateMonitor(logging_interval="step")
-    checkpointing = ModelCheckpoint(
-        every_n_epochs=val_check_epochs,
-        monitor="val-validity",
-        mode="max",
-        save_last=True
-    )
+    checkpointing = ModelCheckpoint(every_n_epochs=val_check_epochs, monitor="val-validity", mode="max", save_last=True)
 
-    # Overwrite if doing a trial run
-    val_check_epochs = 1 if args.trial_run else val_check_epochs
+    # No logger if doing a trial run
     logger = None if args.trial_run else logger
 
     trainer = L.Trainer(
@@ -351,18 +331,17 @@ def build_trainer(args):
         gradient_clip_val=args.gradient_clip_val,
         check_val_every_n_epoch=val_check_epochs,
         callbacks=[lr_monitor, checkpointing],
-        precision=precision
+        precision="32",
     )
     return trainer
 
 
 def main(args):
     # Set some useful torch properties
-    # Float32 precision should only affect computation on A100 and should in theory be a lot faster than the default setting
+    # Float32 precision should only affect computation on A100 and should in theory be a lot faster than the default
     # Increasing the cache size is required since the model will be compiled seperately for each bucket
     torch.set_float32_matmul_precision("high")
     # torch._dynamo.config.cache_size_limit = util.COMPILER_CACHE_SIZE
-
     # print(f"Set torch compiler cache size to {torch._dynamo.config.cache_size_limit}")
 
     L.seed_everything(12345)
@@ -377,7 +356,7 @@ def main(args):
     dm = build_dm(args, vocab)
     print("Datamodule complete.")
 
-    print(f"Building equinv model...")
+    print("Building equinv model...")
     model = build_model(args, dm, vocab)
     print("Model complete.")
 
@@ -393,7 +372,7 @@ if __name__ == "__main__":
 
     # Setup args
     parser.add_argument("--data_path", type=str)
-    parser.add_argument("--dataset", type=str)
+    parser.add_argument("--dataset", type=str, default=DEFAULT_DATASET)
     parser.add_argument("--trial_run", action="store_true")
 
     # Model args
@@ -407,7 +386,7 @@ if __name__ == "__main__":
     parser.add_argument("--coord_norm", type=str, default=DEFAULT_COORD_NORM)
     parser.add_argument("--size_emb", type=int, default=DEFAULT_SIZE_EMB)
     parser.add_argument("--max_atoms", type=int, default=DEFAULT_MAX_ATOMS)
-    parser.add_argument("--arch", type=str, default="semla")
+    parser.add_argument("--arch", type=str, default=DEFAULT_ARCH)
 
     # Training args
     parser.add_argument("--epochs", type=int, default=DEFAULT_EPOCHS)
@@ -429,6 +408,7 @@ if __name__ == "__main__":
     # parser.add_argument("--distill", action="store_true")
 
     # Flow matching and sampling args
+    parser.add_argument("--val_check_epochs", type=int, default=DEFAULT_VAL_CHECK_EPOCHS)
     parser.add_argument("--n_validation_mols", type=int, default=DEFAULT_N_VALIDATION_MOLS)
     parser.add_argument("--num_inference_steps", type=int, default=DEFAULT_NUM_INFERENCE_STEPS)
     parser.add_argument("--cat_sampling_noise_level", type=int, default=DEFAULT_CAT_SAMPLING_NOISE_LEVEL)

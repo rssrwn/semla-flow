@@ -1,5 +1,10 @@
 # Basic Gitignore file
 
+# User specific paths
+datasets/
+wandb/
+output/
+
 # Editors
 .vscode/
 

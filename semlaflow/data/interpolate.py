@@ -1,14 +1,13 @@
+from abc import ABC, abstractmethod
 from typing import Optional
 
-import torch
 import numpy as np
-from abc import ABC, abstractmethod
-from scipy.spatial.transform import Rotation
+import torch
 from scipy.optimize import linear_sum_assignment
+from scipy.spatial.transform import Rotation
 
 import semlaflow.util.functional as smolF
-from semlaflow.util.molrepr import SmolMol, SmolBatch, GeometricMol, GeometricMolBatch
-
+from semlaflow.util.molrepr import GeometricMol, GeometricMolBatch, SmolBatch, SmolMol
 
 SCALE_OT_FACTOR = 0.2
 
@@ -53,7 +52,7 @@ class GeometricNoiseSampler(NoiseSampler):
         scale_ot: bool = False,
         zero_com: bool = True,
         type_mask_index: Optional[int] = None,
-        bond_mask_index: Optional[int] = None
+        bond_mask_index: Optional[int] = None,
     ):
         if coord_noise != "gaussian":
             raise NotImplementedError(f"Coord noise {coord_noise} is not supported.")
@@ -82,7 +81,7 @@ class GeometricNoiseSampler(NoiseSampler):
             "type-noise": self.type_noise,
             "bond-noise": self.bond_noise,
             "noise-scale-ot": self.scale_ot,
-            "zero-com": self.zero_com
+            "zero-com": self.zero_com,
         }
 
     def sample_molecule(self, n_atoms: int) -> GeometricMol:
@@ -157,11 +156,11 @@ class GeometricInterpolant(Interpolant):
         batch_ot: bool = False,
         time_alpha: float = 1.0,
         time_beta: float = 1.0,
-        fixed_time: Optional[float] = None
+        fixed_time: Optional[float] = None,
     ):
 
         if fixed_time is not None and (fixed_time < 0 or fixed_time > 1):
-            raise ValueError(f"fixed_time must be between 0 and 1 if provided.")
+            raise ValueError("fixed_time must be between 0 and 1 if provided.")
 
         if coord_interpolation != "linear":
             raise ValueError(f"coord interpolation '{coord_interpolation}' not supported.")
@@ -199,7 +198,7 @@ class GeometricInterpolant(Interpolant):
             "batch-ot": self.batch_ot,
             "time-alpha": self.time_alpha,
             "time-beta": self.time_beta,
-            **prior_hparams
+            **prior_hparams,
         }
 
         if self.fixed_time is not None:
@@ -254,7 +253,7 @@ class GeometricInterpolant(Interpolant):
         """Permute the from_mol to best match the to_mol and return the permuted from_mol"""
 
         if to_mol.seq_length > from_mol.seq_length:
-            raise RuntimeError(f"from_mol must have at least as many atoms as to_mol.")
+            raise RuntimeError("from_mol must have at least as many atoms as to_mol.")
 
         # Find best permutation first, then best rotation
         # As done in Equivariant Flow Matching (https://arxiv.org/abs/2306.15030)
@@ -289,7 +288,7 @@ class GeometricInterpolant(Interpolant):
         """Interpolates mols which have already been sampled according to OT map, if required"""
 
         if from_mol.seq_length != to_mol.seq_length:
-            raise RuntimeError(f"Both molecules to be interpolated must have the same number of atoms.")
+            raise RuntimeError("Both molecules to be interpolated must have the same number of atoms.")
 
         # Interpolate coords and add gaussian noise
         coords_mean = (from_mol.coords * (1 - t)) + (to_mol.coords * t)

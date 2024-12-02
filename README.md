@@ -5,14 +5,12 @@ This project creates a novel equivariant attention-based message passing archite
 
 ## Installation
 
-All of the code was run using a mamba/conda environment. You can of course use a different environment manager; all core requirements (other than cxx-compiler) are contained in the `requirements.txt` file. Using mamba/conda you can recreate the environment as follows:
-1. `mamba create --name equinv python=3.11`
-2. `mamba activate equinv`
-3. `mamba install -c conda-forge cxx-compiler`
-4. `pip install -r requirements.txt`
+All of the code was run using a mamba/conda environment. You can of course use a different environment manager; all core requirements are contained in the `environment.yaml` file. Using mamba/conda you can recreate the environment as follows:
+1. `mamba env create --file environment.yaml`
+2. `mamba activate semlaflow`
 
 For developing (and to run the notebooks) you will also need to install the extra requirements:
-5. `pip install -r extra_requirements.txt`
+3. `pip install -r extra_requirements.txt`
 
 
 ## Datasets

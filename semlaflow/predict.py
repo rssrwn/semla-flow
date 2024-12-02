@@ -6,21 +6,21 @@ all saved together in one Smol batch. If generating many molecules ensure you ha
 """
 
 import argparse
-from pathlib import Path
+import os
 from functools import partial
+from pathlib import Path
 
-import torch
 import lightning as L
+import torch
+from rdkit import Chem
 
 import semlaflow.scriptutil as util
-from semlaflow.util.molrepr import GeometricMolBatch
+from semlaflow.data.datamodules import GeometricInterpolantDM
+from semlaflow.data.datasets import GeometricDataset
+from semlaflow.data.interpolate import GeometricInterpolant, GeometricNoiseSampler
 from semlaflow.models.fm import Integrator, MolecularCFM
 from semlaflow.models.semla import EquiInvDynamics, SemlaGenerator
-
-from semlaflow.data.datasets import GeometricDataset
-from semlaflow.data.datamodules import GeometricInterpolantDM
-from semlaflow.data.interpolate import GeometricInterpolant, GeometricNoiseSampler
-
+from semlaflow.util.molrepr import GeometricMolBatch
 
 # Default script arguments
 DEFAULT_SAVE_FILE = "predictions.smol"
@@ -103,7 +103,9 @@ def load_model(args, vocab):
     else:
         raise ValueError(f"Unknown architecture hyperparameter.")
 
-    type_mask_index = vocab.indices_from_tokens(["<MASK>"])[0] if hparams["train-type-interpolation"] == "mask" else None
+    type_mask_index = (
+        vocab.indices_from_tokens(["<MASK>"])[0] if hparams["train-type-interpolation"] == "mask" else None
+    )
     bond_mask_index = None
 
     integrator = Integrator(
@@ -112,7 +114,7 @@ def load_model(args, vocab):
         bond_strategy=hparams["integration-bond-strategy"],
         type_mask_index=type_mask_index,
         bond_mask_index=bond_mask_index,
-        cat_noise_level=args.cat_sampling_noise_level
+        cat_noise_level=args.cat_sampling_noise_level,
     )
     fm_model = MolecularCFM.load_from_checkpoint(
         args.ckpt_path,
@@ -121,7 +123,7 @@ def load_model(args, vocab):
         integrator=integrator,
         type_mask_index=type_mask_index,
         bond_mask_index=bond_mask_index,
-        **hparams
+        **hparams,
     )
     return fm_model
 
@@ -200,17 +202,11 @@ def generate_smol_mols(output, model):
     charge_dists = output["charges"]
     masks = output["mask"]
 
-    mols = model.builder.smol_from_tensors(
-        coords,
-        atom_dists,
-        masks,
-        bond_dists=bond_dists,
-        charge_dists=charge_dists
-    )
+    mols = model.builder.smol_from_tensors(coords, atom_dists, masks, bond_dists=bond_dists, charge_dists=charge_dists)
     return mols
 
 
-def save_predictions(args, raw_outputs, model):
+def save_raw_smol(args, raw_outputs, model):
     # Generate GeometricMols and then combine into one GeometricMolBatch
     mol_lists = [generate_smol_mols(output, model) for output in raw_outputs]
     mols = [mol for mol_list in mol_lists for mol in mol_list]
@@ -219,6 +215,15 @@ def save_predictions(args, raw_outputs, model):
     save_path = Path(args.save_dir) / args.save_file
     batch_bytes = batch.to_bytes()
     save_path.write_bytes(batch_bytes)
+
+
+def save_rdkit_sdf(args, mols):
+    path = os.path.join(args.save_dir, args.save_file) + ".sdf"
+    writer = Chem.SDWriter(path)
+    for m in mols:
+        if m is not None:
+            writer.write(m)
+    writer.close()
 
 
 def main(args):
@@ -237,7 +242,7 @@ def main(args):
     dm = dm_from_ckpt(args, vocab)
     print("Datamodule complete.")
 
-    print(f"Loading model...")
+    print("Loading model...")
     model = load_model(args, vocab)
     print("Model complete.")
 
@@ -250,7 +255,8 @@ def main(args):
     print("Generation complete.")
 
     print(f"Saving predictions to {args.save_dir}/{args.save_file}")
-    save_predictions(args, raw_outputs, model)
+    save_rdkit_sdf(args, molecules)
+    save_raw_smol(args, raw_outputs, model)
     print("Complete.")
 
     print("Calculating generative metrics...")
