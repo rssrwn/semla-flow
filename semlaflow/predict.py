@@ -160,67 +160,6 @@ def build_dm(args, hparams, vocab):
         coord_noise="gaussian",
         type_noise=hparams["val-prior-type-noise"],
         bond_noise=hparams["val-prior-bond-noise"],
-        scale_log_size=hparams["val-prior-noise-scale-log-size"],
-        scale_factor=util.COORD_NOISE_SCALE,
-        zero_com=True,
-        type_mask_index=type_mask_index,
-        bond_mask_index=bond_mask_index
-    )
-    eval_interpolant = GeometricInterpolant(
-        prior_sampler,
-        coord_interpolation="linear",
-        type_interpolation=hparams["val-type-interpolation"],
-        bond_interpolation=hparams["val-bond-interpolation"],
-        equivariant_ot=False,
-        batch_ot=False
-    )
-    dm = GeometricInterpolantDM(
-        None,
-        None,
-        dataset,
-        args.batch_cost,
-        test_interpolant=eval_interpolant,
-        bucket_limits=bucket_limits,
-        bucket_cost_scale=args.bucket_cost_scale,
-        pad_to_bucket=False
-    )
-    return dm
-
-
-def build_dm(args, hparams, vocab):
-    if args.dataset == "qm9":
-        coord_std = util.QM9_COORDS_STD_DEV
-        bucket_limits = util.QM9_BUCKET_LIMITS
-
-    elif args.dataset == "geom-drugs":
-        coord_std = util.GEOM_COORDS_STD_DEV
-        bucket_limits = util.GEOM_DRUGS_BUCKET_LIMITS
-
-    else:
-        raise ValueError(f"Unknown dataset {args.dataset}")
- 
-    n_bond_types = 5
-    transform = partial(util.mol_transform, vocab=vocab, n_bonds=n_bond_types, coord_std=coord_std)
-
-    if args.dataset_split == "train":
-        dataset_path = Path(args.data_path) / "train.smol"
-    elif args.dataset_split == "val":
-        dataset_path = Path(args.data_path) / "val.smol"
-    elif args.dataset_split == "test":
-        dataset_path = Path(args.data_path) / "test.smol"
-
-    dataset = GeometricDataset.load(dataset_path, transform=transform)
-    dataset = dataset.sample(args.n_molecules, replacement=True)
-
-    type_mask_index = vocab.indices_from_tokens(["<MASK>"])[0] if hparams["val-type-interpolation"] == "mask" else None
-    bond_mask_index = None
-
-    prior_sampler = GeometricNoiseSampler(
-        vocab.size,
-        n_bond_types,
-        coord_noise="gaussian",
-        type_noise=hparams["val-prior-type-noise"],
-        bond_noise=hparams["val-prior-bond-noise"],
         scale_ot=False,
         zero_com=True,
         type_mask_index=type_mask_index,
