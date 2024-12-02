@@ -274,9 +274,9 @@ def generate_smol_mols(output, model):
 
 def save_predictions(args, molecules, raw_outputs, model):
     save_path = Path(args.save_dir) / args.save_file
+    save_path.parent.mkdir(parents=True, exist_ok=True)
 
     if args.save_file.endswith(".sdf"):
-        save_path.parent.mkdir(parents=True, exist_ok=True)
         return write_mols_to_sdf(molecules, str(save_path))
 
     # Generate GeometricMols and then combine into one GeometricMolBatch
