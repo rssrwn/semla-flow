@@ -41,28 +41,67 @@ def load_model(args, vocab):
     hparams["integration-steps"] = args.integration_steps
     hparams["sampling_strategy"] = args.ode_sampling_strategy
 
-    dynamics = EquiInvDynamics(
-        d_model=hparams["d_model"],
-        d_message=hparams["d_message"],
-        n_coord_sets=hparams["n_coord_sets"],
-        n_layers=hparams["n_layers"],
-        n_attn_heads=hparams["n_attn_heads"],
-        d_message_hidden=hparams["d_message_hidden"],
-        d_edge=hparams["d_edge"],
-        self_cond=hparams["self_cond"],
-        coord_norm=hparams["coord_norm"],
-    )
-    egnn_gen = SemlaGenerator(
-        hparams["d_model"],
-        dynamics,
-        vocab.size,
-        hparams["n_atom_feats"],
-        d_edge=hparams["d_edge"],
-        n_edge_types=util.get_n_bond_types(hparams["integration-type-strategy"]),
-        self_cond=hparams["self_cond"],
-        size_emb=hparams["size_emb"],
-        max_atoms=hparams["max_atoms"],
-    )
+    n_bond_types = util.get_n_bond_types(hparams["integration-type-strategy"])
+
+    # Set default arch to semla if nothing has been saved
+    if hparams.get("architecture") is None:
+        hparams["architecture"] = "semla"
+
+    if hparams["architecture"] == "semla":
+        dynamics = EquiInvDynamics(
+            hparams["d_model"],
+            hparams["d_message"],
+            hparams["n_coord_sets"],
+            hparams["n_layers"],
+            n_attn_heads=hparams["n_attn_heads"],
+            d_message_hidden=hparams["d_message_hidden"],
+            d_edge=hparams["d_edge"],
+            self_cond=hparams["self_cond"],
+            coord_norm=hparams["coord_norm"],
+        )
+        egnn_gen = SemlaGenerator(
+            hparams["d_model"],
+            dynamics,
+            vocab.size,
+            hparams["n_atom_feats"],
+            d_edge=hparams["d_edge"],
+            n_edge_types=n_bond_types,
+            self_cond=hparams["self_cond"],
+            size_emb=hparams["size_emb"],
+            max_atoms=hparams["max_atoms"]
+        )
+
+    elif hparams["architecture"] == "eqgat":
+        from semlaflow.models.eqgat import EqgatGenerator
+
+        egnn_gen = EqgatGenerator(
+            hparams["d_model"],
+            hparams["n_layers"],
+            hparams["n_equi_feats"],
+            vocab.size,
+            hparams["n_atom_feats"],
+            hparams["d_edge"],
+            hparams["n_edge_types"]
+        )
+
+    elif hparams["architecture"] == "egnn":
+        from semlaflow.models.egnn import VanillaEgnnGenerator
+
+        n_layers = args.n_layers if hparams.get("n_layers") is None else hparams["n_layers"]
+        if n_layers is None:
+            raise ValueError("No hparam for n_layers was saved, use script arg to provide n_layers")
+
+        egnn_gen = VanillaEgnnGenerator(
+            hparams["d_model"],
+            n_layers,
+            vocab.size,
+            hparams["n_atom_feats"],
+            d_edge=hparams["d_edge"],
+            n_edge_types=n_bond_types
+        )
+
+    else:
+        raise ValueError(f"Unknown architecture hyperparameter.")
 
     type_mask_index = (
         vocab.indices_from_tokens(["<MASK>"])[0] if hparams["train-type-interpolation"] == "mask" else None
@@ -145,6 +184,66 @@ def build_dm(args, hparams, vocab):
         bucket_limits=bucket_limits,
         bucket_cost_scale=args.bucket_cost_scale,
         pad_to_bucket=False,
+    )
+    return dm
+
+
+def build_dm(args, hparams, vocab):
+    if args.dataset == "qm9":
+        coord_std = util.QM9_COORDS_STD_DEV
+        bucket_limits = util.QM9_BUCKET_LIMITS
+
+    elif args.dataset == "geom-drugs":
+        coord_std = util.GEOM_COORDS_STD_DEV
+        bucket_limits = util.GEOM_DRUGS_BUCKET_LIMITS
+
+    else:
+        raise ValueError(f"Unknown dataset {args.dataset}")
+ 
+    n_bond_types = 5
+    transform = partial(util.mol_transform, vocab=vocab, n_bonds=n_bond_types, coord_std=coord_std)
+
+    if args.dataset_split == "train":
+        dataset_path = Path(args.data_path) / "train.smol"
+    elif args.dataset_split == "val":
+        dataset_path = Path(args.data_path) / "val.smol"
+    elif args.dataset_split == "test":
+        dataset_path = Path(args.data_path) / "test.smol"
+
+    dataset = GeometricDataset.load(dataset_path, transform=transform)
+    dataset = dataset.sample(args.n_molecules, replacement=True)
+
+    type_mask_index = vocab.indices_from_tokens(["<MASK>"])[0] if hparams["val-type-interpolation"] == "mask" else None
+    bond_mask_index = None
+
+    prior_sampler = GeometricNoiseSampler(
+        vocab.size,
+        n_bond_types,
+        coord_noise="gaussian",
+        type_noise=hparams["val-prior-type-noise"],
+        bond_noise=hparams["val-prior-bond-noise"],
+        scale_ot=False,
+        zero_com=True,
+        type_mask_index=type_mask_index,
+        bond_mask_index=bond_mask_index
+    )
+    eval_interpolant = GeometricInterpolant(
+        prior_sampler,
+        coord_interpolation="linear",
+        type_interpolation=hparams["val-type-interpolation"],
+        bond_interpolation=hparams["val-bond-interpolation"],
+        equivariant_ot=False,
+        batch_ot=False
+    )
+    dm = GeometricInterpolantDM(
+        None,
+        None,
+        dataset,
+        args.batch_cost,
+        test_interpolant=eval_interpolant,
+        bucket_limits=bucket_limits,
+        bucket_cost_scale=args.bucket_cost_scale,
+        pad_to_bucket=False
     )
     return dm
 
