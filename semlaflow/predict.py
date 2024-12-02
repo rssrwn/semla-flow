@@ -20,6 +20,7 @@ from semlaflow.models.semla import EquiInvDynamics, SemlaGenerator
 from semlaflow.data.datasets import GeometricDataset
 from semlaflow.data.datamodules import GeometricInterpolantDM
 from semlaflow.data.interpolate import GeometricInterpolant, GeometricNoiseSampler
+from semlaflow.util.rdkit import write_mols_to_sdf
 
 
 # Default script arguments
@@ -271,13 +272,18 @@ def generate_smol_mols(output, model):
     return mols
 
 
-def save_predictions(args, raw_outputs, model):
+def save_predictions(args, molecules, raw_outputs, model):
+    save_path = Path(args.save_dir) / args.save_file
+
+    if args.save_file.endswith(".sdf"):
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        return write_mols_to_sdf(molecules, str(save_path))
+
     # Generate GeometricMols and then combine into one GeometricMolBatch
     mol_lists = [generate_smol_mols(output, model) for output in raw_outputs]
     mols = [mol for mol_list in mol_lists for mol in mol_list]
     batch = GeometricMolBatch.from_list(mols)
 
-    save_path = Path(args.save_dir) / args.save_file
     batch_bytes = batch.to_bytes()
     save_path.write_bytes(batch_bytes)
 
@@ -311,7 +317,7 @@ def main(args):
     print("Generation complete.")
 
     print(f"Saving predictions to {args.save_dir}/{args.save_file}")
-    save_predictions(args, raw_outputs, model)
+    save_predictions(args, molecules, raw_outputs, model)
     print("Complete.")
 
     print("Calculating generative metrics...")

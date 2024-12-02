@@ -396,3 +396,18 @@ def _infer_bonds(mol: Chem.rdchem.Mol):
     mol_str = pybel_mol.write("mol")
     mol = Chem.MolFromMolBlock(mol_str, removeHs=False, sanitize=True)
     return mol
+
+
+def write_mols_to_sdf(mols: list[Chem.rdchem.Mol], filename: str):
+    """Write a list of RDKit molecules to an SDF file
+
+    Args:
+        mols: List of RDKit molecules
+        filename: Path to write the SDF file
+    """
+
+    writer = Chem.SDWriter(filename)
+    for mol in mols:
+        writer.write(mol)
+
+    writer.close()
