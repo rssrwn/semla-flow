@@ -408,6 +408,8 @@ def write_mols_to_sdf(mols: list[Chem.rdchem.Mol], filename: str):
 
     writer = Chem.SDWriter(filename)
     for mol in mols:
+        if mol is None:
+            continue
         writer.write(mol)
 
     writer.close()
