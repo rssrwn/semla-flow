@@ -43,7 +43,7 @@ DEFAULT_WARM_UP_STEPS = 10000
 DEFAULT_BUCKET_COST_SCALE = "linear"
 
 DEFAULT_N_VALIDATION_MOLS = 2000
-DEFAULT_VALIDATION_EPOCHS = 10
+DEFAULT_VAL_CHECK_EPOCHS = 10
 DEFAULT_NUM_INFERENCE_STEPS = 100
 DEFAULT_CAT_SAMPLING_NOISE_LEVEL = 1
 DEFAULT_COORD_NOISE_STD_DEV = 0.2
@@ -310,7 +310,7 @@ def build_dm(args, vocab):
 def build_trainer(args):
     epochs = 1 if args.trial_run else args.epochs
     log_steps = 1 if args.trial_run else 50
-    val_check_epochs = 1 if args.trial_run else args.val_epochs
+    val_check_epochs = 1 if args.trial_run else args.val_check_epochs
 
     project_name = f"{util.PROJECT_PREFIX}-{args.dataset}"
     print("Using precision '32'")
@@ -408,7 +408,7 @@ if __name__ == "__main__":
     # parser.add_argument("--distill", action="store_true")
 
     # Flow matching and sampling args
-    parser.add_argument("--val_epochs", type=int, default=DEFAULT_VALIDATION_EPOCHS)
+    parser.add_argument("--val_check_epochs", type=int, default=DEFAULT_VAL_CHECK_EPOCHS)
     parser.add_argument("--n_validation_mols", type=int, default=DEFAULT_N_VALIDATION_MOLS)
     parser.add_argument("--num_inference_steps", type=int, default=DEFAULT_NUM_INFERENCE_STEPS)
     parser.add_argument("--cat_sampling_noise_level", type=int, default=DEFAULT_CAT_SAMPLING_NOISE_LEVEL)
