@@ -1,6 +1,11 @@
-# SemlaFlow - Efficient Molecular Generation with Flow Matching and Semla
+# SemlaFlow - Efficient 3D Molecular Generation with Latent Attention and Equivariant Flow Matching
 
 This project creates a novel equivariant attention-based message passing architecture, Semla, for molecular design and dynamics tasks. We train a molecular generation model, SemlaFlow, using flow matching with optimal transport to generate realistic 3D molecular structures.
+
+
+## Evaluation Metrics
+
+**A note on evaluation metrics for 3D molecular generative models** - As we pointed out in the paper, many of the existing commonly used metrics for this task are not helpful for assessing the quality of the generated molecules. In addition to the metrics we have proposed here, some recent papers [1][2] have done a great job thoroughly evaluating the quality of generated structure, which may also be of interest.
 
 
 ## Installation
@@ -36,7 +41,7 @@ Once you have created and activated the environment successfully, you can run th
 
 We provide 4 scripts in the repository:
 * `preprocess` - Used for preprocessing larger datasets into the internal representation used by the model for training
-* `train` - Trains a MolFlow model on preprocessed data
+* `train` - Trains a SemlaFlow model on preprocessed data
 * `evaluate` - Evaluates a trained model and prints the results
 * `predict` - Runs the sampling for a trained model and saves the generated molecules
 
@@ -65,10 +70,17 @@ If you find a problem with the code feel free to make a PR. If you have question
 ## Citation
 
 ```
-@article{irwin2024efficient,
-  title={Efficient 3D Molecular Generation with Flow Matching and Scale Optimal Transport},
-  author={Irwin, Ross and Tibo, Alessandro and Janet, Jon-Paul and Olsson, Simon},
-  journal={arXiv preprint arXiv:2406.07266},
-  year={2024}
+@inproceedings{irwin2025semlaflow,
+  title={SemlaFlow -- Efficient 3D Molecular Generation with Latent Attention and Equivariant Flow Matching},
+  author={Ross Irwin and Alessandro Tibo and Jon Paul Janet and Simon Olsson},
+  booktitle={The 28th International Conference on Artificial Intelligence and Statistics},
+  year={2025},
+  url={https://openreview.net/forum?id=bee2G6pEh0}
 }
 ```
+
+## Additional References
+
+Additionally, as mentioned above, some other recent papers have done an excellent job benchmarking 3D molecular generative models, which may also be of interest:
+* [1] Nikitin, Filipp, et al. "GEOM-Drugs Revisited: Toward More Chemically Accurate Benchmarks for 3D Molecule Generation." arXiv preprint arXiv:2505.00169 (2025).
+* [2] Buttenschoen, Martin, et al. "An evaluation of unconditional 3D molecular generation methods." arXiv preprint arXiv:2505.00518 (2025).
